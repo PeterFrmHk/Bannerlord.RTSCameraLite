@@ -1,6 +1,7 @@
 {
   "ConfigFileVersion": 1,
-  "StartBattlesInCommanderMode": true,
+  "EnableMissionRuntimeHooks": false,
+  "StartBattlesInCommanderMode": false,
   "ModeActivationKey": "Backspace",
   "OverrideNativeBackspaceOrders": true,
   "AllowNativeOrdersWhenCommanderModeDisabled": true,
@@ -42,7 +43,7 @@
   "CavalryCommanderBackOffset": 10.0,
   "SkirmisherCommanderBackOffset": 9.0,
   "AnchorAllowedRadius": 4.0,
-  "EnableCommanderAnchorDebug": true,
+  "EnableCommanderAnchorDebug": false,
 
   "MoraleWeight": 0.15,
   "TrainingWeight": 0.20,
@@ -51,7 +52,7 @@
   "CohesionWeight": 0.10,
   "RankWeight": 0.15,
   "CasualtyShockPenaltyWeight": 0.20,
-  "EnableDoctrineDebug": true,
+  "EnableDoctrineDebug": false,
   "DoctrineScanIntervalSeconds": 3.0,
 
   "BasicLineMinimumDiscipline": 0.20,
@@ -64,7 +65,7 @@
   "MinimumPolearmOrShieldRatioForSquare": 0.45,
   "MinimumMountedRatioForMountedWide": 0.60,
   "MinimumHorseArcherRatioForHorseArcherLoose": 0.45,
-  "EnableEligibilityDebug": true,
+  "EnableEligibilityDebug": false,
 
   "CommanderRallyRadius": 25.0,
   "CommanderAbsorptionRadius": 10.0,
@@ -72,7 +73,7 @@
   "CohesionBreakRadius": 35.0,
   "SlotReassignmentCooldownSeconds": 3.0,
   "RallyScanIntervalSeconds": 3.0,
-  "EnableRallyAbsorptionDebug": true,
+  "EnableRallyAbsorptionDebug": false,
 
   "CavalryLateralSpacing": 4.5,
   "CavalryDepthSpacing": 6.0,
@@ -85,7 +86,7 @@
   "CavalryImpactEnemyDistance": 7.5,
   "CavalryImpactSpeedDropThreshold": 0.35,
   "CavalryImpactAgentRatio": 0.25,
-  "EnableCavalryDoctrineDebug": true,
+  "EnableCavalryDoctrineDebug": false,
   "AllowCavalryReformWithoutCommander": false,
 
   "EnableNativeOrderExecution": false,
@@ -95,10 +96,10 @@
   "AllowNativeReform": true,
   "AllowNativeFollowCommander": true,
   "AllowNativeStop": true,
-  "EnableNativeOrderDebug": true,
+  "EnableNativeOrderDebug": false,
 
-  "EnableCommandRouter": true,
-  "EnableCommandValidationDebug": true,
+  "EnableCommandRouter": false,
+  "EnableCommandValidationDebug": false,
   "AllowBasicChargeWithoutAdvancedDoctrine": true,
   "AllowNoCommanderBasicHold": true,
   "AllowNoCommanderBasicFollow": true,
@@ -108,16 +109,16 @@
   "CavalryUseNativeForwardBeforeCharge": true,
   "CavalryUseNativeChargeCommand": true,
   "CavalryForwardToChargeDistance": 25.0,
-  "EnableCavalrySequenceDebug": true,
+  "EnableCavalrySequenceDebug": false,
 
-  "EnableCommandMarkers": true,
+  "EnableCommandMarkers": false,
   "EnableFallbackTextMarkers": true,
   "DefaultMarkerLifetimeSeconds": 2.5,
   "ChargeMarkerLifetimeSeconds": 3.0,
   "ReformMarkerLifetimeSeconds": 3.0,
   "MarkerRefreshThrottleSeconds": 0.25,
 
-  "EnableDiagnostics": true,
+  "EnableDiagnostics": false,
   "ShowDiagnosticsInCommanderModeOnly": true,
   "DiagnosticsToggleKey": "F9",
   "DiagnosticsRefreshIntervalSeconds": 1.0,

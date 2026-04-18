@@ -105,6 +105,7 @@ namespace Bannerlord.RTSCameraLite.Config
                 }
 
                 ApplyOmittedSlice7PolicyDefaults(json, parsed);
+                ApplyOmittedSlice25RuntimeHookDefaults(json, parsed);
                 CommanderConfigDefaults.HarmonizeLegacyDetectionFields(parsed);
                 ApplyOmittedSlice9AnchorDefaults(json, parsed);
                 ApplyOmittedSlice10DoctrineDefaults(json, parsed);
@@ -204,6 +205,33 @@ namespace Bannerlord.RTSCameraLite.Config
             }
 
             return false;
+        }
+
+        private static void ApplyOmittedSlice25RuntimeHookDefaults(string json, CommanderConfig parsed)
+        {
+            if (parsed == null || string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            try
+            {
+                using JsonDocument doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                JsonElement root = doc.RootElement;
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableMissionRuntimeHooks)))
+                {
+                    parsed.EnableMissionRuntimeHooks = false;
+                }
+            }
+            catch
+            {
+                // Ignore merge failures.
+            }
         }
 
         /// <summary>
@@ -1032,6 +1060,23 @@ namespace Bannerlord.RTSCameraLite.Config
         {
             string json = JsonSerializer.Serialize(config, WriteJsonOptions);
             File.WriteAllText(path, json);
+        }
+
+        /// <summary>
+        /// Fail-closed preflight for attaching <see cref="Bannerlord.RTSCameraLite.Mission.CommanderMissionView"/>: returns true only when
+        /// <c>commander_config.json</c> is readable and explicitly sets <see cref="CommanderConfig.EnableMissionRuntimeHooks"/> to true.
+        /// Missing file, invalid JSON, unreadable path, or any exception yields false (no exceptions propagate).
+        /// </summary>
+        public static bool TryReadMissionRuntimeHooksEnabledFailClosed()
+        {
+            try
+            {
+                return CommanderRuntimeHookGate.IsMissionRuntimeHooksEnabledSafe();
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

@@ -8,6 +8,11 @@ namespace Bannerlord.RTSCameraLite.Config
         /// <summary>On-disk migration stamp (Slice 23). Older files omit this key and are treated as version 0 until migration.</summary>
         public int ConfigFileVersion { get; set; }
 
+        /// <summary>
+        /// Hard opt-in gate for mission runtime attachment. When false, <c>CommanderMissionView</c> must not be added.
+        /// </summary>
+        public bool EnableMissionRuntimeHooks { get; set; }
+
         public bool StartBattlesInCommanderMode { get; set; }
 
         public string ModeActivationKey { get; set; } = string.Empty;

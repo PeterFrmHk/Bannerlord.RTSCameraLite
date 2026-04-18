@@ -11,6 +11,10 @@ This mod reads a **single JSON file** shipped with the module. There is **no MCM
 
 - **`ConfigFileVersion`**: Integer schema stamp (see `CommanderConfigSchema.CurrentConfigVersion`). Older files may omit it; the loader migrates by adding missing root keys from defaults and stamping the version. Unknown JSON keys at the root are **ignored** for binding and reported as warnings.
 
+## Mission runtime gate
+
+- **`EnableMissionRuntimeHooks`**: When **false** (default), `SubModule` does **not** add `CommanderMissionView`; the module stays load-safe with no mission-side attachment. When **true**, mission runtime may attach on supported battles only. Preflight uses a **fail-closed** read (missing file, bad JSON, or unreadable path → treated as **false**).
+
 ## Major config groups
 
 The authoritative list of properties is `CommanderConfig` in source. High-level groups:

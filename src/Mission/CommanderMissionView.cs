@@ -42,6 +42,8 @@ namespace Bannerlord.RTSCameraLite.Mission
         private bool _lastLoggedEnabled;
         private bool _hasLoggedEnabledState;
         private bool _lifecycleCleanupDone;
+        private bool _runtimeFaulted;
+        private bool _runtimeFaultCleanupDone;
         private bool _loggedFirstInternalPose;
         private bool _loggedCameraBridgeNotAppliedWarning;
         private CommanderAnchorResolver _anchorResolver;
@@ -89,7 +91,9 @@ namespace Bannerlord.RTSCameraLite.Mission
 
         public override void OnBehaviorInitialize()
         {
-            base.OnBehaviorInitialize();
+            try
+            {
+                base.OnBehaviorInitialize();
 
             if (!CommanderMissionModeGate.IsSupportedMission(Mission))
             {
@@ -100,6 +104,12 @@ namespace Bannerlord.RTSCameraLite.Mission
 
             ConfigLoadResult loadResult = CommanderConfigService.LoadOrCreate();
             _commanderConfig = loadResult.Config ?? CommanderConfigDefaults.CreateDefault();
+            if (!_commanderConfig.EnableMissionRuntimeHooks)
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: mission runtime hooks false after config load; commander runtime stays dormant.");
+                return;
+            }
+
             _commanderInput.ApplyConfig(_commanderConfig);
             _backspaceConflictGuard.ApplyConfig(_commanderConfig);
             _nativeInputGuard.ApplyConfig(_commanderConfig);
@@ -152,19 +162,42 @@ namespace Bannerlord.RTSCameraLite.Mission
             _markerTickAccumSeconds = 0f;
             LogShellActiveOnce();
             LogEnabledTransition();
+            }
+            catch (Exception ex)
+            {
+                HandleRuntimeFault("OnBehaviorInitialize", ex);
+            }
         }
 
         public override void OnMissionTick(float dt)
         {
-            base.OnMissionTick(dt);
+            try
+            {
+                base.OnMissionTick(dt);
 
-            if (Mission != null && Mission.MissionEnded)
+            if (_runtimeFaulted)
+            {
+                EnsureRuntimeFaultCleanup("runtime fault");
+                return;
+            }
+
+            if (Mission == null)
+            {
+                return;
+            }
+
+            if (Mission.MissionEnded)
             {
                 EnsureLifecycleCleanup("mission ended");
                 return;
             }
 
             if (!CommanderMissionModeGate.IsSupportedMission(Mission))
+            {
+                return;
+            }
+
+            if (!_commanderConfig.EnableMissionRuntimeHooks)
             {
                 return;
             }
@@ -217,16 +250,34 @@ namespace Bannerlord.RTSCameraLite.Mission
             {
                 MaybeDebugCommandRouterKeys(dt);
             }
+            }
+            catch (Exception ex)
+            {
+                HandleRuntimeFault("OnMissionTick", ex);
+            }
         }
 
         public override void OnRemoveBehavior()
         {
-            EnsureLifecycleCleanup("behavior removed");
-            base.OnRemoveBehavior();
+            try
+            {
+                EnsureLifecycleCleanup("behavior removed");
+                base.OnRemoveBehavior();
+            }
+            catch (Exception ex)
+            {
+                HandleRuntimeFault("OnRemoveBehavior", ex);
+            }
         }
 
         private void MaybeRunDoctrineAndCavalryScans(float dt)
         {
+            bool doctrineFeatureEnabled = _commanderConfig.EnableDoctrineDebug || _commanderConfig.EnableCavalryDoctrineDebug;
+            if (!CanRunHeavyMissionFeature(doctrineFeatureEnabled))
+            {
+                return;
+            }
+
             if (_perfGate == null || _doctrineScoreCalculator == null || Mission?.PlayerTeam == null)
             {
                 return;
@@ -251,6 +302,13 @@ namespace Bannerlord.RTSCameraLite.Mission
 
         private void MaybeScanFriendlyFormationCommanders(float dt)
         {
+            bool commanderScanFeatureEnabled = _commanderConfig.EnableEligibilityDebug
+                                               || (_commanderModeState.IsEnabled && _commanderConfig.EnableCommanderAnchorDebug);
+            if (!CanRunHeavyMissionFeature(commanderScanFeatureEnabled))
+            {
+                return;
+            }
+
             if (_perfGate == null || _commanderAssignmentService == null || Mission?.PlayerTeam == null)
             {
                 return;
@@ -330,6 +388,11 @@ namespace Bannerlord.RTSCameraLite.Mission
         /// </summary>
         private void MaybeScanRallyAbsorption(float dt)
         {
+            if (!CanRunHeavyMissionFeature(_commanderConfig.EnableRallyAbsorptionDebug))
+            {
+                return;
+            }
+
             if (_perfGate == null
                 || _commanderRallyPlanner == null
                 || _troopAbsorptionController == null
@@ -578,6 +641,11 @@ namespace Bannerlord.RTSCameraLite.Mission
         /// </summary>
         private void MaybeTickNativeCavalryChargeSequences(float dt)
         {
+            if (!CanRunHeavyMissionFeature(_commanderConfig.EnableNativeCavalryChargeSequence))
+            {
+                return;
+            }
+
             if (!_commanderConfig.EnableNativeCavalryChargeSequence
                 || _cavalryNativeChargeOrchestrator == null
                 || Mission?.PlayerTeam == null
@@ -683,6 +751,11 @@ namespace Bannerlord.RTSCameraLite.Mission
 
         private void MaybeTickCommandMarkers(float dt)
         {
+            if (!CanRunHeavyMissionFeature(_commanderConfig.EnableCommandMarkers))
+            {
+                return;
+            }
+
             try
             {
                 if (_commandMarkerService != null && _perfGate != null)
@@ -970,6 +1043,12 @@ namespace Bannerlord.RTSCameraLite.Mission
 
         private void MaybeDebugCommandRouterKeys(float dt)
         {
+            if (!CanRunHeavyMissionFeature(
+                    _commanderConfig.EnableCommandRouter && _commanderConfig.EnableCommandValidationDebug))
+            {
+                return;
+            }
+
             if (_commandRouter == null || !_commanderConfig.EnableCommandRouter || Mission?.PlayerTeam == null)
             {
                 return;
@@ -1060,6 +1139,12 @@ namespace Bannerlord.RTSCameraLite.Mission
 
         private Formation TryPickFirstPlayerFormation()
         {
+            if (!CanRunHeavyMissionFeature(
+                    _commanderConfig.EnableCommandRouter && _commanderConfig.EnableCommandValidationDebug))
+            {
+                return null;
+            }
+
             foreach (Formation formation in Mission.PlayerTeam.FormationsIncludingEmpty)
             {
                 if (formation != null && formation.CountOfUnits > 0)
@@ -1272,6 +1357,11 @@ namespace Bannerlord.RTSCameraLite.Mission
         /// <summary>Slice 20 — throttled text diagnostics (F9 toggle); no overlay.</summary>
         private void MaybeDiagnostics(float dt)
         {
+            if (!CanRunHeavyMissionFeature(_commanderConfig.EnableDiagnostics))
+            {
+                return;
+            }
+
             if (_tacticalFeedback == null)
             {
                 return;
@@ -1487,6 +1577,77 @@ namespace Bannerlord.RTSCameraLite.Mission
             _cameraController.Reset();
             _commanderDiagnosticsService?.Cleanup();
             _feedbackThrottle?.ClearKey("diagnostics-summary");
+        }
+
+        private bool CanRunHeavyMissionFeature(bool featureEnabled)
+        {
+            if (!featureEnabled)
+            {
+                return false;
+            }
+
+            if (_runtimeFaulted || !_commanderConfig.EnableMissionRuntimeHooks)
+            {
+                return false;
+            }
+
+            return Mission?.PlayerTeam != null;
+        }
+
+        private void HandleRuntimeFault(string phase, Exception ex)
+        {
+            try
+            {
+                _runtimeFaulted = true;
+                _commanderModeState.ForceDisabled($"runtime fault: {phase}");
+                ModLogger.LogWarningOnce(
+                    $"commander_mission_view_fault_{phase}",
+                    $"CommanderMissionView {phase} faulted ({ex})");
+                EnsureRuntimeFaultCleanup($"runtime fault: {phase}");
+            }
+            catch
+            {
+                // Never rethrow into Bannerlord.
+            }
+        }
+
+        private void EnsureRuntimeFaultCleanup(string reason)
+        {
+            if (_runtimeFaultCleanupDone)
+            {
+                return;
+            }
+
+            _runtimeFaultCleanupDone = true;
+            try
+            {
+                _nativeInputGuard.Cleanup();
+                _backspaceConflictGuard.Cleanup();
+                if (Mission != null)
+                {
+                    _cameraBridge.RestoreNativeCamera(Mission);
+                }
+
+                _commanderModeState.ForceDisabled(reason);
+                _commandMarkerService?.Cleanup();
+                _tacticalFeedback?.ResetSession();
+                _commanderDiagnosticsService?.Cleanup();
+                _troopAbsorptionController?.Clear();
+                _cavalryDoctrineByFormation.Clear();
+                _cavalryWideLayoutLogTime.Clear();
+                _cavalrySequenceRegistry.Clear();
+                _cavalryNativeSeqTransitionLog.Clear();
+                _perfGate?.ResetAll();
+                _perfDiagnostics?.Reset();
+                _cameraController.Reset();
+                _feedbackThrottle?.ClearKey("diagnostics-summary");
+                _loggedFirstInternalPose = false;
+                _loggedCameraBridgeNotAppliedWarning = false;
+            }
+            catch (Exception cleanupEx)
+            {
+                ModLogger.Warn($"{ModConstants.ModuleId}: runtime fault cleanup degraded ({cleanupEx})");
+            }
         }
 
         private void LogShellActiveOnce()
