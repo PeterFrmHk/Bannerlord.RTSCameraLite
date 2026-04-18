@@ -94,6 +94,26 @@ namespace Bannerlord.RTSCameraLite.Config
 
         public bool EnableCommanderAnchorDebug { get; set; }
 
+        // Slice 10 — doctrine scoring weights and scan cadence (data only; no orders).
+
+        public float MoraleWeight { get; set; }
+
+        public float TrainingWeight { get; set; }
+
+        public float EquipmentWeight { get; set; }
+
+        public float CommanderWeight { get; set; }
+
+        public float CohesionWeight { get; set; }
+
+        public float RankWeight { get; set; }
+
+        public float CasualtyShockPenaltyWeight { get; set; }
+
+        public bool EnableDoctrineDebug { get; set; }
+
+        public float DoctrineScanIntervalSeconds { get; set; }
+
         // Slice 11 — formation eligibility (advisory; no native order blocking).
 
         public float BasicLineMinimumDiscipline { get; set; }
@@ -117,5 +137,21 @@ namespace Bannerlord.RTSCameraLite.Config
         public float MinimumHorseArcherRatioForHorseArcherLoose { get; set; }
 
         public bool EnableEligibilityDebug { get; set; }
+
+        // Slice 12 — rally / absorption (planning only; no orders).
+
+        public float CommanderRallyRadius { get; set; }
+
+        public float CommanderAbsorptionRadius { get; set; }
+
+        public float FormationSlotRadius { get; set; }
+
+        public float CohesionBreakRadius { get; set; }
+
+        public float SlotReassignmentCooldownSeconds { get; set; }
+
+        public float RallyScanIntervalSeconds { get; set; }
+
+        public bool EnableRallyAbsorptionDebug { get; set; }
     }
 }

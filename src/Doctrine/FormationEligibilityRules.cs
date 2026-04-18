@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Bannerlord.RTSCameraLite.Commander;
+using Bannerlord.RTSCameraLite.Equipment;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
@@ -48,10 +49,10 @@ namespace Bannerlord.RTSCameraLite.Doctrine
                     hasAdvancedFormationAccess: false);
             }
 
-            FormationCompositionProfile comp = doctrine.Composition ?? new FormationCompositionProfile(0f, 0f, 0f, 0f, 0f, false, "missing composition");
+            FormationCompositionProfile comp = doctrine.Composition ?? FormationCompositionProfile.Empty("missing composition");
 
             var allowed = new List<AllowedFormationType>();
-            float d = doctrine.DisciplineScore;
+            float d = doctrine.FormationDisciplineScore;
 
             allowed.Add(AllowedFormationType.Mob);
 

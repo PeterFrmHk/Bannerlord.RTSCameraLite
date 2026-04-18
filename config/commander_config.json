@@ -43,6 +43,16 @@
   "AnchorAllowedRadius": 4.0,
   "EnableCommanderAnchorDebug": true,
 
+  "MoraleWeight": 0.15,
+  "TrainingWeight": 0.20,
+  "EquipmentWeight": 0.20,
+  "CommanderWeight": 0.20,
+  "CohesionWeight": 0.10,
+  "RankWeight": 0.15,
+  "CasualtyShockPenaltyWeight": 0.20,
+  "EnableDoctrineDebug": true,
+  "DoctrineScanIntervalSeconds": 3.0,
+
   "BasicLineMinimumDiscipline": 0.20,
   "LooseMinimumDiscipline": 0.25,
   "ShieldWallMinimumDiscipline": 0.45,

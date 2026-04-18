@@ -99,6 +99,8 @@ namespace Bannerlord.RTSCameraLite.Config
                 ApplyOmittedSlice7PolicyDefaults(json, parsed);
                 CommanderConfigDefaults.HarmonizeLegacyDetectionFields(parsed);
                 ApplyOmittedSlice9AnchorDefaults(json, parsed);
+                ApplyOmittedSlice10DoctrineDefaults(json, parsed);
+                CommanderConfigDefaults.HarmonizeLegacyDoctrineFields(parsed);
                 ApplyOmittedSlice11EligibilityDefaults(json, parsed);
                 CommanderConfigDefaults.HarmonizeLegacyEligibilityFields(parsed);
 
@@ -235,6 +237,77 @@ namespace Bannerlord.RTSCameraLite.Config
                 if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableCommanderAnchorDebug)))
                 {
                     parsed.EnableCommanderAnchorDebug = d.EnableCommanderAnchorDebug;
+                }
+            }
+            catch
+            {
+                // Ignore merge failures.
+            }
+        }
+
+        /// <summary>
+        /// Omitted Slice 10 keys deserialize to 0 / false — restore doctrine defaults when absent from JSON.
+        /// </summary>
+        private static void ApplyOmittedSlice10DoctrineDefaults(string json, CommanderConfig parsed)
+        {
+            if (parsed == null || string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            try
+            {
+                using JsonDocument doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                JsonElement root = doc.RootElement;
+                CommanderConfig d = CommanderConfigDefaults.CreateDefault();
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.MoraleWeight)))
+                {
+                    parsed.MoraleWeight = d.MoraleWeight;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.TrainingWeight)))
+                {
+                    parsed.TrainingWeight = d.TrainingWeight;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EquipmentWeight)))
+                {
+                    parsed.EquipmentWeight = d.EquipmentWeight;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CommanderWeight)))
+                {
+                    parsed.CommanderWeight = d.CommanderWeight;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CohesionWeight)))
+                {
+                    parsed.CohesionWeight = d.CohesionWeight;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.RankWeight)))
+                {
+                    parsed.RankWeight = d.RankWeight;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CasualtyShockPenaltyWeight)))
+                {
+                    parsed.CasualtyShockPenaltyWeight = d.CasualtyShockPenaltyWeight;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableDoctrineDebug)))
+                {
+                    parsed.EnableDoctrineDebug = d.EnableDoctrineDebug;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.DoctrineScanIntervalSeconds)))
+                {
+                    parsed.DoctrineScanIntervalSeconds = d.DoctrineScanIntervalSeconds;
                 }
             }
             catch

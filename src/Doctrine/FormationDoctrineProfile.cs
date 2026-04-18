@@ -1,45 +1,70 @@
+using System;
+using Bannerlord.RTSCameraLite.Equipment;
+
 namespace Bannerlord.RTSCameraLite.Doctrine
 {
     /// <summary>
-    /// Doctrine aggregates combining morale/training/equipment/rank proxies (Slice 11).
+    /// Doctrine aggregates for morale, training, equipment, cohesion, shock, and discipline synthesis (Slice 10 — data only).
     /// </summary>
     public sealed class FormationDoctrineProfile
     {
         public FormationDoctrineProfile(
-            float disciplineScore,
-            float morale01,
-            float training01,
-            float equipment01,
-            float rank01,
+            float moraleScore,
+            float trainingScore,
+            float equipmentScore,
+            float commanderScore,
+            float cohesionScore,
+            float casualtyShock,
+            float rankQualityScore,
+            float formationDisciplineScore,
             FormationCompositionProfile composition,
-            bool isCertain,
-            string reason)
+            string reason,
+            bool isCertain)
         {
-            DisciplineScore = disciplineScore;
-            Morale01 = morale01;
-            Training01 = training01;
-            Equipment01 = equipment01;
-            Rank01 = rank01;
-            Composition = composition;
-            IsCertain = isCertain;
+            MoraleScore = Clamp01(moraleScore);
+            TrainingScore = Clamp01(trainingScore);
+            EquipmentScore = Clamp01(equipmentScore);
+            CommanderScore = Clamp01(commanderScore);
+            CohesionScore = Clamp01(cohesionScore);
+            CasualtyShock = Clamp01(casualtyShock);
+            RankQualityScore = Clamp01(rankQualityScore);
+            FormationDisciplineScore = Clamp01(formationDisciplineScore);
+            Composition = composition ?? FormationCompositionProfile.Empty("missing composition");
             Reason = reason ?? string.Empty;
+            IsCertain = isCertain;
         }
 
-        /// <summary>Primary gate for line discipline (0..1).</summary>
-        public float DisciplineScore { get; }
+        public float MoraleScore { get; }
 
-        public float Morale01 { get; }
+        public float TrainingScore { get; }
 
-        public float Training01 { get; }
+        public float EquipmentScore { get; }
 
-        public float Equipment01 { get; }
+        public float CommanderScore { get; }
 
-        public float Rank01 { get; }
+        public float CohesionScore { get; }
+
+        /// <summary>0..1 damage shock proxy (higher = more depleted / shocked).</summary>
+        public float CasualtyShock { get; }
+
+        public float RankQualityScore { get; }
+
+        public float FormationDisciplineScore { get; }
 
         public FormationCompositionProfile Composition { get; }
 
+        public string Reason { get; }
+
         public bool IsCertain { get; }
 
-        public string Reason { get; }
+        private static float Clamp01(float v)
+        {
+            if (float.IsNaN(v) || float.IsInfinity(v))
+            {
+                return 0f;
+            }
+
+            return (float)Math.Max(0d, Math.Min(1d, v));
+        }
     }
 }

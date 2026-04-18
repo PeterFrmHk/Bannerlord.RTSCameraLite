@@ -55,6 +55,15 @@ namespace Bannerlord.RTSCameraLite.Config
                 SkirmisherCommanderBackOffset = 9.0f,
                 AnchorAllowedRadius = 4.0f,
                 EnableCommanderAnchorDebug = true,
+                MoraleWeight = 0.15f,
+                TrainingWeight = 0.20f,
+                EquipmentWeight = 0.20f,
+                CommanderWeight = 0.20f,
+                CohesionWeight = 0.10f,
+                RankWeight = 0.15f,
+                CasualtyShockPenaltyWeight = 0.20f,
+                EnableDoctrineDebug = true,
+                DoctrineScanIntervalSeconds = 3.0f,
                 BasicLineMinimumDiscipline = 0.20f,
                 LooseMinimumDiscipline = 0.25f,
                 ShieldWallMinimumDiscipline = 0.45f,
@@ -65,7 +74,14 @@ namespace Bannerlord.RTSCameraLite.Config
                 MinimumPolearmOrShieldRatioForSquare = 0.45f,
                 MinimumMountedRatioForMountedWide = 0.60f,
                 MinimumHorseArcherRatioForHorseArcherLoose = 0.45f,
-                EnableEligibilityDebug = true
+                EnableEligibilityDebug = true,
+                CommanderRallyRadius = 25.0f,
+                CommanderAbsorptionRadius = 10.0f,
+                FormationSlotRadius = 2.0f,
+                CohesionBreakRadius = 35.0f,
+                SlotReassignmentCooldownSeconds = 3.0f,
+                RallyScanIntervalSeconds = 3.0f,
+                EnableRallyAbsorptionDebug = true
             };
         }
 
@@ -145,6 +161,46 @@ namespace Bannerlord.RTSCameraLite.Config
                    && c.MinimumPolearmOrShieldRatioForSquare == 0f
                    && c.MinimumMountedRatioForMountedWide == 0f
                    && c.MinimumHorseArcherRatioForHorseArcherLoose == 0f;
+        }
+
+        /// <summary>
+        /// Older JSON omits Slice 10 doctrine keys — floats deserialize to 0 and booleans to false.
+        /// </summary>
+        public static void HarmonizeLegacyDoctrineFields(CommanderConfig config)
+        {
+            if (config == null)
+            {
+                return;
+            }
+
+            if (!LooksLikeUnsetSlice10Doctrine(config))
+            {
+                return;
+            }
+
+            CommanderConfig d = CreateDefault();
+            config.MoraleWeight = d.MoraleWeight;
+            config.TrainingWeight = d.TrainingWeight;
+            config.EquipmentWeight = d.EquipmentWeight;
+            config.CommanderWeight = d.CommanderWeight;
+            config.CohesionWeight = d.CohesionWeight;
+            config.RankWeight = d.RankWeight;
+            config.CasualtyShockPenaltyWeight = d.CasualtyShockPenaltyWeight;
+            config.EnableDoctrineDebug = d.EnableDoctrineDebug;
+            config.DoctrineScanIntervalSeconds = d.DoctrineScanIntervalSeconds;
+        }
+
+        private static bool LooksLikeUnsetSlice10Doctrine(CommanderConfig c)
+        {
+            return c.MoraleWeight == 0f
+                   && c.TrainingWeight == 0f
+                   && c.EquipmentWeight == 0f
+                   && c.CommanderWeight == 0f
+                   && c.CohesionWeight == 0f
+                   && c.RankWeight == 0f
+                   && c.CasualtyShockPenaltyWeight == 0f
+                   && !c.EnableDoctrineDebug
+                   && c.DoctrineScanIntervalSeconds == 0f;
         }
     }
 }

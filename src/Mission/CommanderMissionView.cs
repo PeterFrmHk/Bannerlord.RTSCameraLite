@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using Bannerlord.RTSCameraLite.Adapters;
+using TaleWorlds.Core;
 using Bannerlord.RTSCameraLite.Camera;
 using Bannerlord.RTSCameraLite.Commander;
 using Bannerlord.RTSCameraLite.Config;
@@ -24,6 +26,8 @@ namespace Bannerlord.RTSCameraLite.Mission
         private readonly FormationDataAdapter _formationDataAdapter = new FormationDataAdapter();
         private CommanderAssignmentService _commanderAssignmentService;
         private FormationEligibilityRules _formationEligibilityRules;
+        private DoctrineScoreCalculator _doctrineScoreCalculator;
+        private float _doctrineScanAccum;
         private float _commanderPresenceScanTimer;
         private const float CommanderPresenceScanIntervalSeconds = 2.5f;
         private CommanderConfig _commanderConfig = CommanderConfigDefaults.CreateDefault();
@@ -75,6 +79,8 @@ namespace Bannerlord.RTSCameraLite.Mission
             _commanderAssignmentService = new CommanderAssignmentService(_formationDataAdapter);
             _commanderAssignmentService.ApplyDetectionSettings(CommanderDetectionSettings.FromConfig(_commanderConfig));
             _formationEligibilityRules = new FormationEligibilityRules(FormationEligibilitySettings.FromConfig(_commanderConfig));
+            _doctrineScoreCalculator = new DoctrineScoreCalculator(_formationDataAdapter);
+            _doctrineScanAccum = System.Math.Max(0.1f, _commanderConfig.DoctrineScanIntervalSeconds);
             _anchorResolver = new CommanderAnchorResolver(_formationDataAdapter);
             _anchorSettings = CommanderAnchorSettings.FromConfig(_commanderConfig);
             _anchorScanAccum = CommanderAnchorScanIntervalSeconds;
@@ -99,6 +105,7 @@ namespace Bannerlord.RTSCameraLite.Mission
             }
 
             MaybeScanFriendlyFormationCommanders(dt);
+            MaybeScanDoctrineProfiles(dt);
 
             bool toggle = _commanderInput.TryConsumeCommanderModeToggle(Input);
             if (!toggle)
@@ -170,10 +177,19 @@ namespace Bannerlord.RTSCameraLite.Mission
                         commanded++;
                     }
 
-                    if (_commanderConfig.EnableEligibilityDebug && _formationEligibilityRules != null)
+                    if (_commanderConfig.EnableEligibilityDebug && _formationEligibilityRules != null && _doctrineScoreCalculator != null)
                     {
-                        FormationDoctrineProfile doctrine = DoctrineScoreCalculator.Compute(formation, result, _formationDataAdapter);
-                        FormationEligibilityResult elig = _formationEligibilityRules.Evaluate(formation, result, doctrine);
+                        DoctrineScoreResult doctrineRes = _doctrineScoreCalculator.Compute(
+                            Mission,
+                            formation,
+                            result,
+                            DoctrineScoreSettings.FromConfig(_commanderConfig));
+                        if (!doctrineRes.ComputationSucceeded || doctrineRes.Profile == null)
+                        {
+                            continue;
+                        }
+
+                        FormationEligibilityResult elig = _formationEligibilityRules.Evaluate(formation, result, doctrineRes.Profile);
                         string label = formation.RepresentativeClass.ToString();
                         ModLogger.LogDebug(
                             $"{ModConstants.ModuleId}: Eligibility: {label} allowed {FormatEligibilityTypes(elig.AllowedFormationTypes)}; denied {FormatEligibilityTypes(elig.DeniedFormationTypes)}.");
@@ -189,7 +205,82 @@ namespace Bannerlord.RTSCameraLite.Mission
             ModLogger.LogDebug($"{ModConstants.ModuleId}: Commander scan: {commanded}/{total} formations commanded");
         }
 
-        private static string FormatEligibilityTypes(System.Collections.Generic.List<AllowedFormationType> types)
+        private void MaybeScanDoctrineProfiles(float dt)
+        {
+            if (_doctrineScoreCalculator == null || _commanderAssignmentService == null || Mission?.PlayerTeam == null)
+            {
+                return;
+            }
+
+            float interval = System.Math.Max(0.1f, _commanderConfig.DoctrineScanIntervalSeconds);
+            _doctrineScanAccum += dt;
+            if (_doctrineScanAccum < interval)
+            {
+                return;
+            }
+
+            _doctrineScanAccum = 0f;
+
+            if (!_commanderConfig.EnableDoctrineDebug)
+            {
+                return;
+            }
+
+            var sumByClass = new Dictionary<FormationClass, float>();
+            var countByClass = new Dictionary<FormationClass, int>();
+            DoctrineScoreSettings settings = DoctrineScoreSettings.FromConfig(_commanderConfig);
+
+            try
+            {
+                foreach (Formation formation in Mission.PlayerTeam.FormationsIncludingEmpty)
+                {
+                    if (formation == null || formation.CountOfUnits <= 0)
+                    {
+                        continue;
+                    }
+
+                    CommanderPresenceResult presence = _commanderAssignmentService.DetectCommander(Mission, formation);
+                    DoctrineScoreResult scored = _doctrineScoreCalculator.Compute(Mission, formation, presence, settings);
+                    if (!scored.ComputationSucceeded || scored.Profile == null)
+                    {
+                        continue;
+                    }
+
+                    FormationClass cls = formation.RepresentativeClass;
+                    if (!sumByClass.ContainsKey(cls))
+                    {
+                        sumByClass[cls] = 0f;
+                        countByClass[cls] = 0;
+                    }
+
+                    sumByClass[cls] += scored.Profile.FormationDisciplineScore;
+                    countByClass[cls]++;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: Doctrine scan skipped ({ex.Message})");
+                return;
+            }
+
+            if (sumByClass.Count == 0)
+            {
+                return;
+            }
+
+            var parts = new List<string>();
+            foreach (KeyValuePair<FormationClass, float> kv in sumByClass)
+            {
+                int c = countByClass[kv.Key];
+                float avg = c > 0 ? kv.Value / c : 0f;
+                parts.Add($"{kv.Key} discipline {avg:F2}");
+            }
+
+            parts.Sort();
+            ModLogger.LogDebug($"{ModConstants.ModuleId}: Doctrine scan: {string.Join(", ", parts)}.");
+        }
+
+        private static string FormatEligibilityTypes(List<AllowedFormationType> types)
         {
             if (types == null || types.Count == 0)
             {
@@ -365,6 +456,7 @@ namespace Bannerlord.RTSCameraLite.Mission
             _loggedCameraBridgeNotAppliedWarning = false;
             _commanderPresenceScanTimer = 0f;
             _anchorScanAccum = 0f;
+            _doctrineScanAccum = 0f;
             _cameraController.Reset();
         }
 
