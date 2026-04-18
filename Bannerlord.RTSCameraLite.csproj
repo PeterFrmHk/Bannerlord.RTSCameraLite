@@ -12,15 +12,24 @@
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
     <FileVersion>0.1.0.0</FileVersion>
-    <InformationalVersion>0.1.0-slice1</InformationalVersion>
+    <InformationalVersion>0.1.0-slice2</InformationalVersion>
   </PropertyGroup>
 
-  <!-- Slice 1: compile foundation sources only. Re-expand includes in later slices. -->
+  <PropertyGroup>
+    <BannerlordRefsVersion>1.2.12.66233</BannerlordRefsVersion>
+    <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
+  </PropertyGroup>
+
+  <!-- Slice 2: SubModule + commander mission shell + core logging. -->
   <ItemGroup>
     <Compile Remove="src\**\*.cs" />
     <Compile Include="src\SubModule.cs" />
     <Compile Include="src\Core\ModConstants.cs" />
     <Compile Include="src\Core\ModLogger.cs" />
+    <Compile Include="src\Mission\CommanderMissionModeGate.cs" />
+    <Compile Include="src\Mission\CommanderMissionView.cs" />
+    <Compile Include="src\Mission\CommanderModeState.cs" />
+    <Compile Include="src\Input\CommanderInputReader.cs" />
   </ItemGroup>
 
   <!-- Optional: set BannerlordGameFolder in local.props or env BANNERLORD_INSTALL -->
@@ -36,8 +45,36 @@
       <HintPath>$(BannerlordGameFolder)\bin\Win64_Shipping_Client\TaleWorlds.Library.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="TaleWorlds.Core">
+      <HintPath>$(BannerlordGameFolder)\bin\Win64_Shipping_Client\TaleWorlds.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.InputSystem">
+      <HintPath>$(BannerlordGameFolder)\bin\Win64_Shipping_Client\TaleWorlds.InputSystem.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="TaleWorlds.MountAndBlade">
       <HintPath>$(BannerlordGameFolder)\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.MountAndBlade.View">
+      <HintPath>$(BannerlordGameFolder)\Modules\Native\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.View.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- When building without a local game folder, Native view + Core/Input refs come from NuGet reference assemblies. -->
+  <ItemGroup Condition="'$(BannerlordGameFolder)' == ''">
+    <Reference Include="TaleWorlds.Core">
+      <HintPath>$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.InputSystem">
+      <HintPath>$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.InputSystem.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.MountAndBlade.View">
+      <HintPath>$(NuGetPackageRoot)bannerlord.referenceassemblies.native\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.MountAndBlade.View.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

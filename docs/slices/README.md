@@ -23,6 +23,7 @@ Some slices touch fragile engine surfaces. See **`docs/slice-hard-gates.md`** be
 | Slice | Foundation / notes |
 | --- | --- |
 | 1 | [`slice-1-foundation.md`](slice-1-foundation.md) — loadable module only |
+| 2 | [`slice-2-mission-runtime-shell.md`](slice-2-mission-runtime-shell.md) — battle-only `MissionView` shell, commander mode state, Backspace toggle |
 
 ## Slice audit index (repository root)
 
