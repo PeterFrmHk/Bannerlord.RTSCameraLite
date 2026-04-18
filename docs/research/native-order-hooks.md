@@ -2,6 +2,8 @@
 
 Completing this research for **your** Bannerlord build satisfies the **Slice 12** prerequisite in [`../slice-hard-gates.md`](../slice-hard-gates.md).
 
+**Broader formation/order model & execution options:** see [`base-game-order-scan.md`](base-game-order-scan.md) (local Steam `TaleWorlds.MountAndBlade.dll` reflection, 2026-04-18).
+
 ## How this was inspected
 
 Local game binaries were inspected with **PowerShell `[System.Reflection.Assembly]::LoadFrom`** and member enumeration (same surface area ILSpy would show for public API discovery). Paths used on the research machine:

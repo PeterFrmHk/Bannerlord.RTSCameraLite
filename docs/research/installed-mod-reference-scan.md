@@ -1,175 +1,109 @@
-# Installed mod reference scan — research only
+# Installed Bannerlord mods — reference pattern scan (research only)
 
-**Scope:** Read-only inspection of paths on the machine used for this scan. **No production mod files were modified.** **No third-party source or decompiled bodies were copied** into `Bannerlord.RTSCameraLite`. Patterns below are **summaries** for orientation; treat workshop DLL string hits as **heuristic** until verified in ILSpy/dnSpy.
+**Scope:** Summarize **patterns** observed in locally installed modules. **No code was copied** into `Bannerlord.RTSCameraLite`, and **no `src/` production files** were modified for this note. Where another mod’s logic is not visible as `.cs`, behavior is labeled **reference-only / DLL** (decompilation would be required for certainty — not performed here beyond dependency and file layout inspection).
 
-**Scan date:** 2026-02-02
+**Related base-game research:** [`base-game-camera-scan.md`](base-game-camera-scan.md), [`base-game-order-scan.md`](base-game-order-scan.md).
 
 ---
 
 ## 1. Scan environment
 
-### Paths scanned
-
-| Location | Path |
-|----------|------|
-| Game Modules | `C:\Program Files (x86)\Steam\steamapps\common\Mount & Blade II Bannerlord\Modules\` |
-| Steam Workshop (App 261550) | `C:\Program Files (x86)\Steam\steamapps\workshop\content\261550\` |
-| Local dev repo (not under Steam Modules) | `C:\Documents\Project Pandora\Bannerlord.RTSCameraLite\` — **not** a duplicate of the Steam `Modules` tree; used only to compare **SubModule** / stated dependencies vs installed ecosystem |
-
-### Mods found
-
-**`Modules\` (11 folder roots):** `BannerlordRTSCamera`, `BirthAndDeath`, `CustomBattle`, `FastMode`, `Multiplayer`, `Native`, `NavalDLC`, `SandBox`, `SandBoxCore`, `StoryMode` — plus vanilla-style modules as expected.
-
-**Workshop `261550\`:** **25** numeric item folders.
-
-**SubModule.xml resolution:** **22** workshop items contained a discoverable `SubModule.xml` (recursive search). **3** folders had **no** `SubModule.xml` found in this pass: `2875093027`, `2876427251`, `3302249842` — treat as **uninspected / incomplete layout** until manually checked.
-
-### Which mods were inspected
-
-| Mod / item | Inspection depth |
-|------------|------------------|
-| **RTS Camera** (Workshop `3596692403`) | `SubModule.xml`, `RTSCamera.dll` **string token scan** (ASCII), folder layout |
-| **RTS Camera Command System** (`3596693285`) | `SubModule.xml` only |
-| **Harmony, ButterLib, UIExtenderEx, MCM v5** (Workshop `2859188632`, `2859232415`, `2859222409`, `2859238197`) | `SubModule.xml` (dependencies + versions) |
-| **Bannerlord RTS Camera** under **`Modules\BannerlordRTSCamera`** | `SubModule.xml`, **readable `.cs` sources** (small partial reads + ripgrep for API tokens), **not** the same tree as `Bannerlord.RTSCameraLite` repo path |
-| **Party AI Controls** (`3620272139`) | `SubModule.xml`, `PartyAIUpdated.dll` **string token scan** |
-| **RBM / RBM_WS** (`2859251492`, `3635788184`) | `SubModule.xml` headers only (IDs/names) |
-| Other workshop items (weapon/armor/QoL mods) | **SubModule.xml** grep list only — **not** deep-dived (low relevance to RTS camera slice) |
-
-### Source vs DLL
-
-| Artifact | Method |
-|----------|--------|
-| `Modules\BannerlordRTSCamera\src\**\*.cs` | **Direct source read** (patterns only) |
-| `RTSCamera.dll`, `PartyAIUpdated.dll` | **No decompiler** run in this session; **embedded ASCII string** presence checks for coarse signals (`Harmony`, `MissionView`, etc.) — **reference-only**, not proof of control flow |
-| **Decompiled code** | **Not produced** here; any future ILSpy work must stay **local notes** — do not paste licensed third-party decompilation into this repo |
+| Item | Detail |
+| --- | --- |
+| **Paths scanned** | `C:\Program Files (x86)\Steam\steamapps\common\Mount & Blade II Bannerlord\Modules\` ; `C:\Program Files (x86)\Steam\steamapps\workshop\content\261550\` |
+| **Local workspace (additional)** | `C:\Documents\Project Pandora\Bannerlord.RTSCameraLite\` — **separate** greenfield mod repo (not under Steam `Modules` in this scan); used only as **scope context**, not as an installed Steam Workshop item. |
+| **Mods found (Modules folder)** | `BannerlordRTSCamera`, `BirthAndDeath`, `CustomBattle`, `FastMode`, `Multiplayer`, `Native`, `NavalDLC`, `SandBox`, `SandBoxCore`, `StoryMode` |
+| **Workshop items** | **25** numeric folders under `261550`; **23** had parseable `SubModule.xml` at folder root; **2** folders had **no** `SubModule.xml` at root (`2875093027`, `3302249842`) — **not inspected** (may be incomplete downloads or nested layouts). |
+| **Primary inspection depth** | **Source read:** `Modules\BannerlordRTSCamera\` (C# tree present). **Metadata + binaries:** Workshop **RTS Camera** (`3596692403`, `3596693285`), **MCM** (`2859238197`), **Harmony** (`2859188632`), **Party AI Controls** (`3620272139` — DLL-only). **SubModule-only sample:** **RBM** (`2859251492`), **ButterLib** (`2859232415`), **UIExtenderEx** (`2859222409`) for dependency patterns. |
+| **Decompilation** | **Not run** (no ILSpy output in this document). Workshop `RTSCamera.dll` **did not** complete `GetExportedTypes` in a quick reflection probe unless a full game bin dependency chain is preloaded — treat deep type lists as **DLL / decompiler follow-up**. |
 
 ---
 
 ## 2. Candidate reference mods
 
-| Mod name | Path | Version (from XML) | Source / DLL | Relevant systems (evidence) | Risk / quality notes |
-|----------|------|---------------------|--------------|-----------------------------|------------------------|
-| **RTS Camera** | `...\261550\3596692403\` | v5.3.25 | **DLL** (`RTSCamera.dll`, `RTSCameraAgentComponent.dll`) | Workshop XML declares **Harmony** metadata `LoadBeforeThis`; string scan shows **MissionView**, **UpdateOverridenCamera**, **OrderController**, **SetOrder**, **Gauntlet**, **MissionLibrary**, **Harmony**, **Patch** | **High complexity** vs Lite goals; **license** not inspected in this scan; **do not treat as dependency** |
-| **RTS Camera Command System** | `...\261550\3596693285\` | v5.3.25 | **DLL** | Same Harmony metadata pattern; separate module id `RTSCamera.CommandSystem` | Loads alongside base RTS Camera; **order/UI** surface likely large |
-| **Harmony** | `...\261550\2859188632\` | per XML | DLL module | Ecosystem baseline for many mods | **Patch conflict** hub if Lite ever adds Harmony |
-| **ButterLib** | `...\261550\2859232415\` | per XML | DLL module | Hotkeys / helpers | Common **MCM** companion |
-| **UIExtenderEx** | `...\261550\2859222409\` | v2.13.2 (sample) | DLL module | Depends on **Bannerlord.Harmony** in XML | **Gauntlet** extension stack |
-| **MCM v5** | `...\261550\2859238197\` | v5.11.3 | DLL module | Depends **Harmony**, **ButterLib**, **UIExtenderEx** (explicit in `SubModule.xml`) | **Heavy dependency fan-out** for any mod that adopts MCM as shown |
-| **Bannerlord RTS Camera** (Modules folder) | `...\Modules\BannerlordRTSCamera\` | v0.1.0 (XML) | **Full source + solution** present under game Modules (unusual layout) | `RtsCameraMissionView : MissionView`, `UpdateOverridenCamera` override; `MissionScreenCameraAdapter` uses **typed** `MissionScreen` / `CombatCamera` public surface | **Not** automatically the same as `Bannerlord.RTSCameraLite` git tree — avoid accidental **cross-copy**; good **local** contrast for “public `MissionScreen` vs reflection bridge” approaches |
-| **Party AI Controls** | `...\261550\3620272139\` | v1.3.13 | `PartyAIUpdated.dll` | XML: depends **Harmony** + **UIExtenderEx**; strings: **Formation**, **Harmony**, **Patch**; no `OrderController` token hit | **Campaign / AI** tilt; **UIExtenderEx** coupling — not a Lite v0.1 model |
-| **RBM / RBM WS** | `2859251492` / `3635788184` | per XML | Presumed DLL-heavy | Large combat overhaul ecosystem | **High** Harmony surface; **conflict** risk with anything touching combat AI, damage, formations |
+| Mod (as labeled) | Path | Version (SubModule) | Source / DLL | Relevant systems | Risk / quality notes |
+| --- | --- | --- | --- | --- | --- |
+| **Bannerlord RTS Camera** (local Modules clone) | `...\Modules\BannerlordRTSCamera\` | `v0.1.0` | **Full C# source** under `src\` | `MissionView`, `MissionScreen` adapter, input frame, lifecycle `AddMissionBehavior`, **no Harmony** in `START_HERE.md` | **High alignment** with `Bannerlord.RTSCameraLite` goals; **not** a dependency — pattern reference only. |
+| **RTS Camera** (Workshop) | `...\261550\3596692403\` | `v5.3.25` | **DLLs:** `RTSCamera.dll`, `MissionLibrary.dll`, `RTSCameraAgentComponent.dll`, ships **`0Harmony.dll`** | RTS camera + Gauntlet `ModuleData` / `GUI`; **Harmony** metadata in `SubModule.xml` | **Heavy stack**; strong candidate for **what not to mirror** if keeping deps minimal. |
+| **RTS Camera Command System** | `...\261550\3596693285\` | `v5.3.25` | **DLL** (companion to RTS Camera) | Command system add-on (name only from `SubModule.xml`) | Depends on **Harmony** metadata; **load order** coupling with main RTS Camera mod. |
+| **Mod Configuration Menu v5** | `...\261550\2859238197\` | `v5.11.3` | DLL + XML | MCM / options stack | **Harmony + ButterLib + UIExtenderEx** chain in `DependedModules` — useful as **ecosystem** reference, not as a minimal-dependency template. |
+| **Harmony** | `...\261550\2859188632\` | `v2.4.2.0` | Library | Transitive for many mods | **Patch conflict** surface scales with number of postfix/prefix patches on same methods. |
+| **ButterLib** | `...\261550\2859232415\` | `v2.10.3` | Library | Shared modding utilities | Often paired with MCM / Harmony. |
+| **UIExtenderEx** | `...\261550\2859222409\` | `v2.13.2` | Library | UI extension | **Overlay / VM** style extensions — opposite of “no overlay” direction unless justified. |
+| **Party AI Controls** | `...\261550\3620272139\` | `v1.3.13` | **DLL only** (`PartyAIUpdated.dll`) | AI / party (name suggests non-camera) | **DLL-only** — patterns require decompile or author docs. |
+| **(RBM) Realistic Battle Mod** | `...\261550\2859251492\` | `v4.2.23` | Not deep-read | Large gameplay mutator | **High conflict risk** with battle/camera/order patches — treat as **compatibility hazard** reference. |
 
 ---
 
 ## 3. Camera reference patterns
 
-| Mod | Location (concept) | What it does (summary) | Public API / Harmony / reflection / UI | Adopt / adapt / reject | Reason |
-|-----|---------------------|-------------------------|------------------------------------------|-------------------------|--------|
-| **RTS Camera** (Workshop DLL) | *Decompilation not run* — inferred from strings + public product knowledge | Free camera + battle commanding stack | **Harmony** + **MissionView** string evidence; **MissionLibrary** / **Gauntlet** suggest UI extensions | **Reject** as dependency for **RTSCameraLite**; **adapt** only as “what the ecosystem ships” | Matches **public-reference-scan.md**: Lite avoids Harmony stack |
-| **Modules `BannerlordRTSCamera`** | `RtsCameraMissionView` (`MissionView` subclass) | Adds mission view, wires tick path, overrides **camera update** hook | **Public** `MissionView` / `MissionScreen` usage in `MissionScreenCameraAdapter` (typed `CombatCamera`, bearing/elevation/distance from screen) | **Adapt idea** (“MissionView owns camera frame”) **verify** against your locked game version | Strong typing may **differ** by Bannerlord branch vs Lite’s reflection `CameraBridge` — **ILSpy on game DLLs** still required |
-| **Modules `BannerlordRTSCamera`** | `MissionScreenCameraAdapter` | Captures state from `MissionScreen`, applies pose via engine camera clone pattern | **Public engine/view** types | **Adapt** pattern naming (adapter boundary) | Aligns with Lite’s **adapter** concept; implementation details must stay version-specific |
-
-**String-scan disclaimer (RTSCamera.dll):** Presence of `UpdateOverridenCamera` in the binary does **not** prove it is the *only* camera path; only that the symbol text appears (obfuscation absent for that string).
+| Pattern | Mod | Location (conceptual) | What it does | Mechanism | Adopt / adapt / reject | Reason |
+| --- | --- | --- | --- | --- | --- | --- |
+| **`MissionView` + `UpdateOverridenCamera`** | **BannerlordRTSCamera** | `RtsCameraMissionView` | When RTS active, applies camera; otherwise returns `false` and restores | **Public** engine APIs (`MissionView`, `MissionScreen`, `CombatCamera`) | **Adopt** | Matches engine-supported override point from [`base-game-camera-scan.md`](base-game-camera-scan.md). |
+| **`MissionScreen` as typed adapter** | **BannerlordRTSCamera** | `MissionScreenCameraAdapter` | Reads `CombatCamera`, distance/bearing/elevation; applies pose via **`CustomCamera`** swap; restore sets `CustomCamera` back to `CombatCamera` | **Public** properties on `MissionScreen` (`CombatCamera`, `CustomCamera`, `CameraBearing`, …) | **Adapt** | `Bannerlord.RTSCameraLite` today uses **`object` + reflection** in `CameraBridge`; **typed `MissionScreen`** adapter reduces fragility **if** project references `MountAndBlade.View.dll` consistently. |
+| **Operational gating** | **BannerlordRTSCamera** | `RtsCameraMissionView.IsOperational` | Skips RTS when photo mode / conversation | **Public** `MissionScreen` flags | **Adopt** | Prevents fighting cinematic/UI camera modes. |
+| **Harmony + MissionLibrary** | **Workshop RTS Camera** | `SubModule.xml` + `bin` | Ships Harmony and extra DLLs | **Harmony** + unknown internals | **Reject for Lite baseline** | Keeps dependency and patch surface small; **reference-only** for feature ideas. |
 
 ---
 
 ## 4. Input reference patterns
 
-| Mod | Location | What it does (summary) | Mechanism | Adopt / adapt / reject | Reason |
-|-----|----------|-------------------------|-----------|-------------------------|--------|
-| **Modules `BannerlordRTSCamera`** | `BannerlordInputSource`, `RtsInputRouter` (file names from tree listing) | Centralizes reading native input into mod contracts | Appears **public input** APIs (not inspected line-by-line here) | **Adapt** “single input adapter” shape | Matches Lite goal of isolating input; verify suppression limits per `slice-6-audit.md` |
-| **RTS Camera** (Workshop) | *Not decompiled* | Historically integrates with **MissionLibrary** / hotkey stacks (per XML `GameText` paths) | Likely **Harmony** + framework hooks | **Reject** copying | Couples to ecosystem Lite does not want for v0.1 |
+| Pattern | Mod | Location | What it does | Mechanism | Adopt / adapt / reject | Reason |
+| --- | --- | --- | --- | --- | --- | --- |
+| **`IInputContext` polling** | **BannerlordRTSCamera** | `BannerlordInputSource.Read` | Maps WASD/Q/E/F10/shift/ctrl/scroll to a small immutable frame | **Public** `Input.IsKeyPressed`, `IsKeyDown`, `GetDeltaMouseScroll` | **Adopt** | Same family as base-game `IInputContext` scan. |
+| **Router split** | **BannerlordRTSCamera** | `RtsInputRouter` | Separates “RTS enabled” vs disabled routing | Pure C# | **Adapt** | Useful boundary; Lite already has `RTSCameraInput` / guard patterns — keep **one** routing choke point. |
 
 ---
 
 ## 5. Formation / order reference patterns
 
-| Mod | Location | What it does (summary) | Mechanism | Adopt / adapt / reject | Reason |
-|-----|----------|-------------------------|-----------|-------------------------|--------|
-| **RTS Camera** (Workshop DLL) | *Strings only* | References **OrderController** / **SetOrder** text present | Unknown call sites without decompile | **Reject** as template | Lite already targets **public** `OrderController` path in `native-order-hooks.md` — **verify locally**, do not mirror RTS Camera IL |
-| **RTS Camera Command System** | Separate module id | Companion for command UX / issuance | DLL + Harmony metadata | **Reject** dependency | Same as above |
-| **Party AI Controls** | DLL strings | **Formation** token present | **Harmony**/**Patch** suggested | **Reject** for Lite v0.1 | Campaign AI domain; not a clean order-execution reference |
+| Pattern | Mod | Evidence | Mechanism | Adopt / adapt / reject | Reason |
+| --- | --- | --- | --- | --- | --- |
+| **Companion command DLL** | **RTS Camera Command System** | `SubModule.xml` names `RTSCamera.CommandSystem.dll` | **DLL** (contents not decompiled here) | **Reference-only** | Suggests **splitting** camera vs. commands across modules is a **product** pattern, not a **Lite** requirement. |
+| **Battle / AI DLL mods** | **Party AI Controls**, **RBM** | DLL-only or large gameplay | **Likely Harmony / deep patches** | **Reject as templates** | High **conflict** risk with mission tick, AI, and damage formulas. |
+
+**Lite repo alignment:** `Bannerlord.RTSCameraLite` already documents **public `OrderController`** issuance in [`native-order-hooks.md`](native-order-hooks.md) — no installed mod was needed to validate that path.
 
 ---
 
 ## 6. UI / marker / config reference patterns
 
-| Mod | Pattern | Mechanism | Adopt / adapt / reject |
-|-----|---------|-----------|-------------------------|
-| **RTS Camera** | `Gauntlet` string in DLL | UI layer / Gauntlet stack | **Reject** for Lite slice 8 non-goals |
-| **RTS Camera** | `MissionLibrary` XML nodes in `SubModule.xml` | Text / config integration | **Reject** — different config pipeline than Lite JSON |
-| **MCM v5** | `SubModule.xml` chains **Harmony → ButterLib → UIExtenderEx** | Standard MCM stack | **Later** optional — see `public-reference-scan.md` |
-| **Lite repo** (`Bannerlord.RTSCameraLite`) | `config\rts_camera_lite.json` | JSON config | **Adopt** (already project direction) |
-
-**Tactical markers:** No dedicated marker mod was deep-scanned in workshop set; RTS Camera’s Gauntlet string suggests **UI-heavy** approach — **not** Lite’s first slice.
+| Pattern | Mod | Evidence | Mechanism | Adopt / adapt / reject | Reason |
+| --- | --- | --- | --- | --- | --- |
+| **No MCM / no ButterLib** | **BannerlordRTSCamera** | `START_HERE.md` | JSON or embedded settings (**verify in repo**) | **Adopt philosophy** | Matches Lite’s “small JSON config” direction. |
+| **MCM + UIExtenderEx stack** | **MCM v5** | `SubModule.xml` dependencies | Community UI stack | **Reject for Lite core** | Large dependency graph; use only if product explicitly approves MCM. |
+| **Gauntlet / `GUI` folders** | **Workshop RTS Camera** | `GUI` directory present | UI assets | **Reference-only** | Tactical overlay class features live here in many mods — **not** Lite slice-13 direction. |
 
 ---
 
 ## 7. Compatibility lessons
 
-### Dependencies observed
-
-- **RTS Camera stack:** `Bannerlord.Harmony` metadata `LoadBeforeThis` on both RTS modules sampled; depends on Native/Sandbox/StoryMode **1.3.13** line in XML.
-- **MCM v5:** explicit triangular dependency on **Harmony + ButterLib + UIExtenderEx** (versions pinned in XML excerpt).
-- **UIExtenderEx:** depends on **Bannerlord.Harmony** per its `SubModule.xml`.
-
-### Common patch targets (inferred ecosystem risk)
-
-- Anything **Harmony-heavy** (RBM family, RTS Camera, Party AI) increases chance of **shared method prefixes** on mission tick, AI tick, or UI view models — **not enumerated** here without patch table export.
-
-### Likely conflict zones for `Bannerlord.RTSCameraLite`
-
-| Zone | Cause | Mitigation |
-|------|-------|------------|
-| **Camera ownership** | Another `MissionView` returning `true` from **UpdateOverridenCamera** in the same mission | Document **priority** / `ViewOrderPriority` policy; test with RTS Camera disabled |
-| **Harmony ordering** | Lite uses **no Harmony** today — third-party patches may still alter same public methods Lite calls | Prefer **narrow public surface** + version lock; avoid private patches in Lite |
-| **Input keys** | Overlapping default binds with RTS Camera / MCM / ButterLib hotkeys | Keep Lite keys configurable; document clashes in manual checklist |
-
-### Load order
-
-- Workshop modules commonly use **`DependedModuleMetadatas`** with `LoadBeforeThis` / `LoadAfterThis` for Harmony and Native — Lite’s `SubModule.xml` is **minimal** (no Harmony) — **advantage**: fewer ordering constraints, but also **no** automatic ordering vs Harmony mods unless you add metadata later.
+| Topic | Observation |
+| --- | --- |
+| **Dependencies** | Workshop **RTS Camera** declares **`Bannerlord.Harmony` LoadBeforeThis** and ships **`MissionLibrary.dll`**. **MCM** pulls **Harmony + ButterLib + UIExtenderEx**. |
+| **Common patch targets** | Mods that patch **`Mission`**, **`Agent`**, **`MissionAgent`**, **`DefaultCombatEngine`**, or **`MissionScreen`** tick paths are likely to **interact** with camera override and input guards. |
+| **Conflict zones** | **RBM**-class mods (battle formulas), **RTS Camera** (camera + orders), **MCM-heavy UI** (Gauntlet layers) — all increase **order-of-execution** sensitivity. |
+| **Load order** | `DependedModuleMetadata` with **`LoadBeforeThis` / `LoadAfterThis`** appears in multiple `SubModule.xml` files — **Lite** should keep dependencies minimal so players have fewer ordering puzzles. |
+| **Parallel RTS camera products** | Having **Workshop RTS Camera** and **`Modules\BannerlordRTSCamera`** and **`Bannerlord.RTSCameraLite`** installed together is **probably undesirable** — expect **double camera hooks** if more than one `MissionView` overrides the camera. |
 
 ---
 
-## 8. Recommended code patterns for `Bannerlord.RTSCameraLite`
+## 8. Recommended patterns for `Bannerlord.RTSCameraLite`
 
-### Safe patterns to adopt (aligned with installed + repo research)
+| Category | Safe to adopt (conceptually) | Avoid / defer | APIs to keep verifying locally |
+| --- | --- | --- | --- |
+| **Camera** | `MissionView.UpdateOverridenCamera`; gate on **photo mode / conversation**; **restore** on deactivate/finalize; prefer **typed `MissionScreen`** adapter over raw reflection when reference assemblies allow | Shipping **Harmony** for camera unless public hook disappears | `MissionScreen.CustomCamera` vs `CombatCamera` semantics on **your** game version |
+| **Input** | Thin wrapper over **`IInputContext`**; single router; configurable keys | Hard-coded overlap with native battle keys without ownership policy | `Input` vs `DebugInput` on `MissionBehavior` |
+| **Orders** | Keep issuance in **one** executor using **public** `OrderController` / `WorldPosition` | Copying DLL-only mods without ILSpy verification | `Formation` ownership fields (`Team` vs `PlayerOwner` discrepancy on 1.3.x — see [`base-game-order-scan.md`](base-game-order-scan.md)) |
+| **UI / markers** | Throttled `InformationMessage` + optional **public** particle burst | Pulling **UIExtenderEx** / MCM unless approved | `Mission.AddParticleSystemBurstByName` string names per build |
+| **Dependencies** | **Native + SandBoxCore** (as Lite already does) | **Harmony / MCM / ButterLib** as mandatory deps for v1 | Match **Native** version in `SubModule.xml` to player build |
 
-1. **`MissionView` subclass** as the mission hook host (matches Modules `BannerlordRTSCamera` and official extension point).
-2. **Explicit adapter type** at the `MissionScreen` / camera boundary (name mirrors `MissionScreenCameraAdapter` — concept only, do not copy source).
-3. **`OrderController` public issuance** with selection snapshot/restore (already in Lite research `native-order-hooks.md`) — **preferred** over copying workshop IL.
-4. **JSON config** in module folder — avoids MCM dependency fan-out seen in installed MCM.
-
-### Patterns to avoid
-
-1. **Taking a Harmony dependency** “because RTS Camera does” — contradicts Lite hard gates unless scope changes.
-2. **Importing MissionLibrary / Gauntlet paths** from RTS Camera XML as a template — different product architecture.
-3. **Trusting DLL string hits** as specification — always **ILSpy local game DLLs** + Lite `docs/version-lock.md`.
-
-### APIs to verify locally
-
-- `MissionView.UpdateOverridenCamera` spelling and return contract on **your** game branch.
-- `MissionScreen` members used by any typed adapter (`CombatCamera`, `CameraBearing`, etc.) vs Lite’s reflection allowlist — **one** approach should be chosen per version matrix, not mixed blindly.
-- `OrderController.SetOrder` / `SetOrderWithPosition` and `WorldPosition` ctor — already in `native-order-hooks.md`; re-verify on upgrade.
-
-### Minimum dependency recommendation
-
-- **Ship path:** remain **Native + SandBoxCore + …** only (as Lite `SubModule.xml` today) for v0.1.
-- **Player machine:** expect coexistence with **Harmony / MCM / RTS Camera** — document **incompatibility testing** (manual checklist) rather than adding deps to Lite.
+**Minimum dependency recommendation (Lite):** stay on **public engine APIs** + **optional JSON**; treat **Workshop RTS Camera** and similar stacks as **behavioral references**, not libraries — **do not add** another mod as a NuGet/assembly dependency unless explicitly approved.
 
 ---
 
-## Scan gaps / follow-ups
+## 9. Follow-ups (optional)
 
-1. **Decompilation:** Not performed; to respect licensing and this task, any deep inspection of `RTSCamera.dll` should be done **locally** by the owner with ILSpy, notes only.
-2. **Three workshop folders** without `SubModule.xml` in search — manual cleanup or re-download check.
-3. **Relationship** between `Modules\BannerlordRTSCamera` source tree and `Bannerlord.RTSCameraLite` git repo — **clarify internally** to prevent editing the wrong tree when iterating.
-
----
-
-## Document history
-
-| Date | Note |
-|------|------|
-| 2026-02-02 | Initial installed-mod scan from Steam `Modules` + Workshop `261550` + string heuristics on selected DLLs. |
+1. If **Workshop RTS Camera** patterns are needed in detail, run **ILSpy** locally on `RTSCamera.dll` with the **game’s `bin`** as assembly resolution path (**reference-only** notes).  
+2. Resolve the two Workshop folders **without** root `SubModule.xml` or document them as abandoned/partial.  
+3. Keep this file updated when the machine’s Workshop subscription set changes.
