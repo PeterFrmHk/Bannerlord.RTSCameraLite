@@ -7,12 +7,11 @@
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <!-- Bannerlord module layout: SubModule.xml at module root, DLL under bin\Win64_Shipping_Client -->
     <OutputPath>bin\Win64_Shipping_Client\</OutputPath>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
     <FileVersion>0.1.0.0</FileVersion>
-    <InformationalVersion>0.1.0-slice2</InformationalVersion>
+    <InformationalVersion>0.1.0-slice3</InformationalVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -20,7 +19,7 @@
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
   </PropertyGroup>
 
-  <!-- Slice 2: SubModule + commander mission shell + core logging. -->
+  <!-- Slice 3: commander shell + adapter boundary skeletons. -->
   <ItemGroup>
     <Compile Remove="src\**\*.cs" />
     <Compile Include="src\SubModule.cs" />
@@ -30,19 +29,31 @@
     <Compile Include="src\Mission\CommanderMissionView.cs" />
     <Compile Include="src\Mission\CommanderModeState.cs" />
     <Compile Include="src\Input\CommanderInputReader.cs" />
+    <Compile Include="src\Adapters\CameraBridge.cs" />
+    <Compile Include="src\Adapters\CameraBridgeResult.cs" />
+    <Compile Include="src\Adapters\NativeOrderPrimitiveExecutor.cs" />
+    <Compile Include="src\Adapters\NativeOrderResult.cs" />
+    <Compile Include="src\Adapters\FormationDataAdapter.cs" />
+    <Compile Include="src\Adapters\FormationDataResult.cs" />
+    <Compile Include="src\Adapters\BackspaceConflictGuard.cs" />
+    <Compile Include="src\Adapters\BackspaceConflictResult.cs" />
+    <Compile Include="src\Camera\CommanderCameraPose.cs" />
+    <Compile Include="src\Camera\CommanderCameraController.cs" />
   </ItemGroup>
 
-  <!-- Optional: set BannerlordGameFolder in local.props or env BANNERLORD_INSTALL -->
   <Import Project="local.props" Condition="Exists('local.props')" />
 
   <PropertyGroup>
     <BannerlordGameFolder Condition="'$(BannerlordGameFolder)' == ''">$(BANNERLORD_INSTALL)</BannerlordGameFolder>
   </PropertyGroup>
 
-  <!-- Prefer local game binaries when BannerlordGameFolder is set. View DLL may live under Modules\Native\bin on some installs. -->
   <ItemGroup Condition="'$(BannerlordGameFolder)' != ''">
     <Reference Include="TaleWorlds.Library">
       <HintPath>$(BannerlordGameFolder)\bin\Win64_Shipping_Client\TaleWorlds.Library.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.Engine">
+      <HintPath>$(BannerlordGameFolder)\bin\Win64_Shipping_Client\TaleWorlds.Engine.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="TaleWorlds.Core">
@@ -63,18 +74,29 @@
     </Reference>
   </ItemGroup>
 
-  <!-- When building without a local game folder, Native view + Core/Input refs come from NuGet reference assemblies. -->
   <ItemGroup Condition="'$(BannerlordGameFolder)' == ''">
     <Reference Include="TaleWorlds.Core">
       <HintPath>$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.Engine">
+      <HintPath>$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.Engine.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="TaleWorlds.InputSystem">
       <HintPath>$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.InputSystem.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="TaleWorlds.MountAndBlade">
+      <HintPath>$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.MountAndBlade.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="TaleWorlds.MountAndBlade.View">
       <HintPath>$(NuGetPackageRoot)bannerlord.referenceassemblies.native\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.MountAndBlade.View.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.Library">
+      <HintPath>$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.Library.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

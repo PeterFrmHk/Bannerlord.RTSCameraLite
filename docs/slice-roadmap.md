@@ -15,7 +15,7 @@ This roadmap aligns **design intent** with **incremental delivery**. Status labe
 | **2** | Mission behavior shell | **Shipped** | `MissionView` behavior attached to missions. |
 | **3** | Camera controller skeleton | **Shipped** | Pose / controller skeleton. |
 | **4** | Movement input + pose updates | **Shipped** | Input snapshot + pose integration. |
-| **5** | Real camera bridge + restore | **Shipped / hard-gated** | `CameraBridge`; verify per `docs/slice-hard-gates.md`. |
+| **5** | Real camera bridge + restore | **Shipped / hard-gated** | `docs/slices/slice-5-real-camera-bridge.md`, `docs/tests/manual-test-checklist-slice-5.md`; `src/Adapters/CameraBridge.cs` + `CommanderMissionView`; verify per `docs/slice-hard-gates.md`. |
 | **6A** | Default RTS battle entry | **Planned** | Battle begins in RTS Commander Mode by default. |
 | **6B** | Backspace native conflict guard | **Planned** | Backspace becomes doctrine toggle; guard native conflicts. |
 | **7A** | Commander presence model | **Planned** | Presence gates discipline. |

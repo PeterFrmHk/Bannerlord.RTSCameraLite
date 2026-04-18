@@ -24,6 +24,8 @@ Some slices touch fragile engine surfaces. See **`docs/slice-hard-gates.md`** be
 | --- | --- |
 | 1 | [`slice-1-foundation.md`](slice-1-foundation.md) — loadable module only |
 | 2 | [`slice-2-mission-runtime-shell.md`](slice-2-mission-runtime-shell.md) — battle-only `MissionView` shell, commander mode state, Backspace toggle |
+| 3 | [`slice-3-adapter-boundaries.md`](slice-3-adapter-boundaries.md) — adapter skeletons (`CameraBridge`, orders, formation reads, Backspace guard) |
+| 5 | [`slice-5-real-camera-bridge.md`](slice-5-real-camera-bridge.md) — typed `CameraBridge` + restore; manual checklist [`manual-test-checklist-slice-5.md`](../tests/manual-test-checklist-slice-5.md) |
 
 ## Slice audit index (repository root)
 

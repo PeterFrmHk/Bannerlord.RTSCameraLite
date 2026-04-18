@@ -1,3 +1,5 @@
+using Bannerlord.RTSCameraLite.Adapters;
+using Bannerlord.RTSCameraLite.Camera;
 using Bannerlord.RTSCameraLite.Core;
 using Bannerlord.RTSCameraLite.Input;
 using TaleWorlds.MountAndBlade;
@@ -6,16 +8,20 @@ using TaleWorlds.MountAndBlade.View.MissionViews;
 namespace Bannerlord.RTSCameraLite.Mission
 {
     /// <summary>
-    /// Slice 2 mission shell: attaches on supported battles, owns commander mode + input reader. No camera movement or native orders.
+    /// Slice 2–3: mission shell, commander mode, adapter boundaries (camera bridge not wired — no camera override).
     /// </summary>
     public sealed class CommanderMissionView : MissionView
     {
         private readonly CommanderModeState _commanderModeState = new CommanderModeState();
         private readonly CommanderInputReader _commanderInput = new CommanderInputReader();
+        private readonly CameraBridge _cameraBridge = new CameraBridge();
+        private readonly CommanderCameraController _cameraController = new CommanderCameraController();
+        private readonly BackspaceConflictGuard _backspaceConflictGuard = new BackspaceConflictGuard();
         private bool _loggedShellActive;
         private bool _lastLoggedEnabled;
         private bool _hasLoggedEnabledState;
         private bool _lifecycleCleanupDone;
+        private bool _cameraBridgeProbeCompleted;
 
         public CommanderModeState CommanderModeState => _commanderModeState;
 
@@ -31,6 +37,8 @@ namespace Bannerlord.RTSCameraLite.Mission
             }
 
             _commanderModeState.Enable(ModConstants.CommanderShellDefaultEnableReason);
+            _cameraController.InitializeFromMission(Mission);
+            _backspaceConflictGuard.EnterCommanderMode();
             LogShellActiveOnce();
             LogEnabledTransition();
         }
@@ -56,19 +64,53 @@ namespace Bannerlord.RTSCameraLite.Mission
                 toggle = _commanderInput.TryConsumeEmergencyDebugCommanderToggle(Input);
             }
 
-            if (!toggle)
+            if (toggle)
             {
-                return;
+                _commanderModeState.Toggle("commander mode toggle key");
+                SyncBackspaceGuardWithCommanderMode();
+                LogEnabledTransition();
+                if (_commanderModeState.IsEnabled)
+                {
+                    _cameraController.InitializeFromMission(Mission);
+                }
             }
 
-            _commanderModeState.Toggle("commander mode toggle key");
-            LogEnabledTransition();
+            _backspaceConflictGuard.Tick();
+            MaybeProbeCameraBridgeOnce();
         }
 
         public override void OnRemoveBehavior()
         {
             EnsureLifecycleCleanup("behavior removed");
             base.OnRemoveBehavior();
+        }
+
+        private void SyncBackspaceGuardWithCommanderMode()
+        {
+            if (_commanderModeState.IsEnabled)
+            {
+                _backspaceConflictGuard.EnterCommanderMode();
+            }
+            else
+            {
+                _backspaceConflictGuard.ExitCommanderMode();
+            }
+        }
+
+        private void MaybeProbeCameraBridgeOnce()
+        {
+            if (!_commanderModeState.IsEnabled || _cameraBridgeProbeCompleted)
+            {
+                return;
+            }
+
+            _cameraBridgeProbeCompleted = true;
+            CameraBridgeResult result = _cameraBridge.TryApply(Mission, _cameraController.GetPose());
+            if (!result.Applied)
+            {
+                ModLogger.LogDebug(
+                    $"{ModConstants.ModuleId}: CameraBridge probe — Applied={result.Applied}, Restored={result.Restored}: {result.Message}");
+            }
         }
 
         private void EnsureLifecycleCleanup(string reason)
@@ -79,10 +121,23 @@ namespace Bannerlord.RTSCameraLite.Mission
             }
 
             _lifecycleCleanupDone = true;
+            _backspaceConflictGuard.ExitCommanderMode();
+            if (Mission != null)
+            {
+                CameraBridgeResult restore = _cameraBridge.RestoreNativeCamera(Mission);
+                if (!restore.Restored)
+                {
+                    ModLogger.LogDebug(
+                        $"{ModConstants.ModuleId}: CameraBridge restore — Restored={restore.Restored}: {restore.Message}");
+                }
+            }
+
             _commanderModeState.ForceDisabled(reason);
             ModLogger.LogDebug($"{ModConstants.ModuleId}: RTS Commander Mode cleanup ({reason}).");
             _loggedShellActive = false;
             _hasLoggedEnabledState = false;
+            _cameraBridgeProbeCompleted = false;
+            _cameraController.Reset();
         }
 
         private void LogShellActiveOnce()

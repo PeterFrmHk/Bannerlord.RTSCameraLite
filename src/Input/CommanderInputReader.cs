@@ -7,9 +7,6 @@ namespace Bannerlord.RTSCameraLite.Input
     /// </summary>
     public sealed class CommanderInputReader
     {
-        /// <summary>
-        /// Primary toggle: Backspace (edge: key released).
-        /// </summary>
         public bool TryConsumeCommanderModeToggle(IInputContext input)
         {
             if (input == null)
@@ -28,8 +25,7 @@ namespace Bannerlord.RTSCameraLite.Input
         }
 
         /// <summary>
-        /// DEBUG / DEVELOPMENT ONLY — not part of the player-facing contract. Emergency parity toggle if Backspace is unavailable.
-        /// Do not document this as a supported player binding.
+        /// DEBUG / DEVELOPMENT ONLY — emergency toggle if Backspace is unavailable.
         /// </summary>
         public bool TryConsumeEmergencyDebugCommanderToggle(IInputContext input)
         {
