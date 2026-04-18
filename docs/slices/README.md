@@ -1,0 +1,42 @@
+# Slice-based development
+
+This repository uses **vertical slices**: each slice delivers a **small, testable** increment with **documentation evidence**. Slices are how the project stays honest about **what is shipped** versus **what is planned** (commander doctrine, cavalry cadence, default RTS entry).
+
+## What every slice should include
+
+1. **Purpose** — one paragraph “why this slice exists.”
+2. **Function spec** — observable behaviors and boundaries (often in `docs/slice-N-audit.md`).
+3. **Implementation summary** — code areas touched (for engineers).
+4. **Tests** — manual checklist rows in `docs/manual-test-checklist.md` (automated tests when added later).
+5. **Audit** — tradeoffs, risks, non-goals (`docs/slice-N-audit.md`).
+6. **Portfolio evidence** — what a reviewer can verify without reading C# (checklist + audit + media plan clips when applicable).
+
+## Hard gates (research before implementation)
+
+Some slices touch fragile engine surfaces. See **`docs/slice-hard-gates.md`** before implementing:
+
+- **Slice 5** — real camera apply + restore  
+- **Slice 12** — native order execution  
+
+## Slice audit index (repository root)
+
+Audit files live under `docs/` (historical layout):
+
+| Slice | Audit |
+| --- | --- |
+| 1 | `docs/slice-1-audit.md` |
+| 2 | `docs/slice-2-audit.md` |
+| 3 | `docs/slice-3-audit.md` |
+| 5 | `docs/slice-5-audit.md` |
+| 6 | `docs/slice-6-audit.md` |
+| 7 | `docs/slice-7-audit.md` |
+| 8 | `docs/slice-8-audit.md` |
+| 9 | `docs/slice-9-audit.md` |
+| 10 | `docs/slice-10-audit.md` |
+| 11 | `docs/slice-11-audit.md` |
+| 12 | `docs/slice-12-audit.md` |
+| 13 | `docs/slice-13-audit.md` (minimal markers; see roadmap renumbering note) |
+
+**Roadmap (doctrine-aligned, includes future slices):** `docs/slice-roadmap.md`
+
+**Manual tests:** `docs/manual-test-checklist.md`
