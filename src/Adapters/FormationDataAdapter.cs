@@ -391,5 +391,131 @@ namespace Bannerlord.RTSCameraLite.Adapters
                 return FormationDataResult.Failure("mounted probe threw");
             }
         }
+
+        /// <summary>
+        /// Slice 10: coarse equipment hints for doctrine composition. <see cref="FormationDataResult.FloatValue"/> = armor estimate 0..1,
+        /// <see cref="FormationDataResult.FloatValueB"/> = 1 if shield in offhand, <see cref="FormationDataResult.CommanderLikely"/> = mounted,
+        /// <see cref="FormationDataResult.Message"/> = weapon category string (lowercased tokens).
+        /// </summary>
+        public FormationDataResult TryGetAgentEquipmentHints(Agent agent)
+        {
+            if (agent == null)
+            {
+                return FormationDataResult.Failure("agent is null");
+            }
+
+            try
+            {
+                bool mounted = false;
+                try
+                {
+                    mounted = agent.HasMount;
+                }
+                catch
+                {
+                    mounted = false;
+                }
+
+                bool shield = false;
+                try
+                {
+                    MissionWeapon off = agent.WieldedOffhandWeapon;
+                    if (!off.IsEmpty)
+                    {
+                        WeaponClass offClass = off.CurrentUsageItem.WeaponClass;
+                        if (offClass == WeaponClass.SmallShield || offClass == WeaponClass.LargeShield)
+                        {
+                            shield = true;
+                        }
+                    }
+                }
+                catch
+                {
+                    shield = false;
+                }
+
+                string category = "unknown";
+                try
+                {
+                    MissionWeapon main = agent.WieldedWeapon;
+                    if (!main.IsEmpty)
+                    {
+                        WeaponClass mainClass = main.CurrentUsageItem.WeaponClass;
+                        category = mainClass.ToString().ToLowerInvariant();
+                    }
+                }
+                catch
+                {
+                    category = "unknown";
+                }
+
+                float armor01 = 0.45f;
+                try
+                {
+                    FormationDataResult tier = TryGetAgentTierOrRank(agent);
+                    if (tier.Success)
+                    {
+                        armor01 = (float)Math.Max(0d, Math.Min(1d, tier.FloatValue / 45d) * 0.35d + 0.35d);
+                    }
+                }
+                catch
+                {
+                    armor01 = 0.45f;
+                }
+
+                return new FormationDataResult(
+                    true,
+                    category,
+                    default,
+                    armor01,
+                    null,
+                    commanderLikely: mounted,
+                    floatValueB: shield ? 1f : 0f);
+            }
+            catch (Exception ex)
+            {
+                return FormationDataResult.Failure("TryGetAgentEquipmentHints threw: " + ex.Message);
+            }
+        }
+
+        /// <summary>Slice 10: normalized health 0..1 for casualty / shock heuristics.</summary>
+        public FormationDataResult TryGetAgentHealthRatio(Agent agent)
+        {
+            if (agent == null)
+            {
+                return FormationDataResult.Failure("agent is null");
+            }
+
+            try
+            {
+                float max = agent.HealthLimit;
+                if (max < 1e-3f)
+                {
+                    return new FormationDataResult(true, "HealthLimit tiny", default, 0f);
+                }
+
+                float h = agent.Health;
+                float ratio = (float)Math.Max(0d, Math.Min(1d, h / max));
+                return new FormationDataResult(true, string.Empty, default, ratio);
+            }
+            catch (Exception ex)
+            {
+                return FormationDataResult.Failure("TryGetAgentHealthRatio threw: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Slice 10: per-agent morale 0..1 when a stable public API exists on this ref assembly.
+        /// Currently unimplemented — callers should use neutral fallbacks.
+        /// </summary>
+        public FormationDataResult TryGetAgentMorale01(Agent agent)
+        {
+            if (agent == null)
+            {
+                return FormationDataResult.Failure("agent is null");
+            }
+
+            return FormationDataResult.Failure("morale not exposed on Agent for this build");
+        }
     }
 }

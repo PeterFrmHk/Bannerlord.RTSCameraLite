@@ -54,7 +54,18 @@ namespace Bannerlord.RTSCameraLite.Config
                 CavalryCommanderBackOffset = 10.0f,
                 SkirmisherCommanderBackOffset = 9.0f,
                 AnchorAllowedRadius = 4.0f,
-                EnableCommanderAnchorDebug = true
+                EnableCommanderAnchorDebug = true,
+                BasicLineMinimumDiscipline = 0.20f,
+                LooseMinimumDiscipline = 0.25f,
+                ShieldWallMinimumDiscipline = 0.45f,
+                SquareMinimumDiscipline = 0.55f,
+                CircleMinimumDiscipline = 0.60f,
+                AdvancedAdaptiveMinimumDiscipline = 0.75f,
+                MinimumShieldRatioForShieldWall = 0.35f,
+                MinimumPolearmOrShieldRatioForSquare = 0.45f,
+                MinimumMountedRatioForMountedWide = 0.60f,
+                MinimumHorseArcherRatioForHorseArcherLoose = 0.45f,
+                EnableEligibilityDebug = true
             };
         }
 
@@ -90,6 +101,50 @@ namespace Bannerlord.RTSCameraLite.Config
                    && !c.AllowHighestTierFallback
                    && !c.NoCommanderAllowsBasicMobOrders
                    && c.MinimumCommandAuthorityScore == 0f;
+        }
+
+        /// <summary>
+        /// Older JSON omits Slice 11 floats (deserialize to 0) and EnableEligibilityDebug false.
+        /// </summary>
+        public static void HarmonizeLegacyEligibilityFields(CommanderConfig config)
+        {
+            if (config == null)
+            {
+                return;
+            }
+
+            if (!LooksLikeUnsetSlice11Eligibility(config))
+            {
+                return;
+            }
+
+            CommanderConfig d = CreateDefault();
+            config.BasicLineMinimumDiscipline = d.BasicLineMinimumDiscipline;
+            config.LooseMinimumDiscipline = d.LooseMinimumDiscipline;
+            config.ShieldWallMinimumDiscipline = d.ShieldWallMinimumDiscipline;
+            config.SquareMinimumDiscipline = d.SquareMinimumDiscipline;
+            config.CircleMinimumDiscipline = d.CircleMinimumDiscipline;
+            config.AdvancedAdaptiveMinimumDiscipline = d.AdvancedAdaptiveMinimumDiscipline;
+            config.MinimumShieldRatioForShieldWall = d.MinimumShieldRatioForShieldWall;
+            config.MinimumPolearmOrShieldRatioForSquare = d.MinimumPolearmOrShieldRatioForSquare;
+            config.MinimumMountedRatioForMountedWide = d.MinimumMountedRatioForMountedWide;
+            config.MinimumHorseArcherRatioForHorseArcherLoose = d.MinimumHorseArcherRatioForHorseArcherLoose;
+            config.EnableEligibilityDebug = d.EnableEligibilityDebug;
+        }
+
+        private static bool LooksLikeUnsetSlice11Eligibility(CommanderConfig c)
+        {
+            return !c.EnableEligibilityDebug
+                   && c.BasicLineMinimumDiscipline == 0f
+                   && c.LooseMinimumDiscipline == 0f
+                   && c.ShieldWallMinimumDiscipline == 0f
+                   && c.SquareMinimumDiscipline == 0f
+                   && c.CircleMinimumDiscipline == 0f
+                   && c.AdvancedAdaptiveMinimumDiscipline == 0f
+                   && c.MinimumShieldRatioForShieldWall == 0f
+                   && c.MinimumPolearmOrShieldRatioForSquare == 0f
+                   && c.MinimumMountedRatioForMountedWide == 0f
+                   && c.MinimumHorseArcherRatioForHorseArcherLoose == 0f;
         }
     }
 }

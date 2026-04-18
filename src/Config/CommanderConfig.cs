@@ -93,5 +93,29 @@ namespace Bannerlord.RTSCameraLite.Config
         public float AnchorAllowedRadius { get; set; }
 
         public bool EnableCommanderAnchorDebug { get; set; }
+
+        // Slice 11 — formation eligibility (advisory; no native order blocking).
+
+        public float BasicLineMinimumDiscipline { get; set; }
+
+        public float LooseMinimumDiscipline { get; set; }
+
+        public float ShieldWallMinimumDiscipline { get; set; }
+
+        public float SquareMinimumDiscipline { get; set; }
+
+        public float CircleMinimumDiscipline { get; set; }
+
+        public float AdvancedAdaptiveMinimumDiscipline { get; set; }
+
+        public float MinimumShieldRatioForShieldWall { get; set; }
+
+        public float MinimumPolearmOrShieldRatioForSquare { get; set; }
+
+        public float MinimumMountedRatioForMountedWide { get; set; }
+
+        public float MinimumHorseArcherRatioForHorseArcherLoose { get; set; }
+
+        public bool EnableEligibilityDebug { get; set; }
     }
 }

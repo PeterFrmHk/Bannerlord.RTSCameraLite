@@ -99,6 +99,8 @@ namespace Bannerlord.RTSCameraLite.Config
                 ApplyOmittedSlice7PolicyDefaults(json, parsed);
                 CommanderConfigDefaults.HarmonizeLegacyDetectionFields(parsed);
                 ApplyOmittedSlice9AnchorDefaults(json, parsed);
+                ApplyOmittedSlice11EligibilityDefaults(json, parsed);
+                CommanderConfigDefaults.HarmonizeLegacyEligibilityFields(parsed);
 
                 return new ConfigLoadResult(
                     loaded: true,
@@ -233,6 +235,87 @@ namespace Bannerlord.RTSCameraLite.Config
                 if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableCommanderAnchorDebug)))
                 {
                     parsed.EnableCommanderAnchorDebug = d.EnableCommanderAnchorDebug;
+                }
+            }
+            catch
+            {
+                // Ignore merge failures.
+            }
+        }
+
+        /// <summary>
+        /// Omitted Slice 11 keys deserialize to 0 / false — restore defaults when absent from JSON.
+        /// </summary>
+        private static void ApplyOmittedSlice11EligibilityDefaults(string json, CommanderConfig parsed)
+        {
+            if (parsed == null || string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            try
+            {
+                using JsonDocument doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                JsonElement root = doc.RootElement;
+                CommanderConfig d = CommanderConfigDefaults.CreateDefault();
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.BasicLineMinimumDiscipline)))
+                {
+                    parsed.BasicLineMinimumDiscipline = d.BasicLineMinimumDiscipline;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.LooseMinimumDiscipline)))
+                {
+                    parsed.LooseMinimumDiscipline = d.LooseMinimumDiscipline;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.ShieldWallMinimumDiscipline)))
+                {
+                    parsed.ShieldWallMinimumDiscipline = d.ShieldWallMinimumDiscipline;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.SquareMinimumDiscipline)))
+                {
+                    parsed.SquareMinimumDiscipline = d.SquareMinimumDiscipline;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CircleMinimumDiscipline)))
+                {
+                    parsed.CircleMinimumDiscipline = d.CircleMinimumDiscipline;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.AdvancedAdaptiveMinimumDiscipline)))
+                {
+                    parsed.AdvancedAdaptiveMinimumDiscipline = d.AdvancedAdaptiveMinimumDiscipline;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.MinimumShieldRatioForShieldWall)))
+                {
+                    parsed.MinimumShieldRatioForShieldWall = d.MinimumShieldRatioForShieldWall;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.MinimumPolearmOrShieldRatioForSquare)))
+                {
+                    parsed.MinimumPolearmOrShieldRatioForSquare = d.MinimumPolearmOrShieldRatioForSquare;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.MinimumMountedRatioForMountedWide)))
+                {
+                    parsed.MinimumMountedRatioForMountedWide = d.MinimumMountedRatioForMountedWide;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.MinimumHorseArcherRatioForHorseArcherLoose)))
+                {
+                    parsed.MinimumHorseArcherRatioForHorseArcherLoose = d.MinimumHorseArcherRatioForHorseArcherLoose;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableEligibilityDebug)))
+                {
+                    parsed.EnableEligibilityDebug = d.EnableEligibilityDebug;
                 }
             }
             catch

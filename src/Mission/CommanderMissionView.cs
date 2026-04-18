@@ -3,6 +3,7 @@ using Bannerlord.RTSCameraLite.Camera;
 using Bannerlord.RTSCameraLite.Commander;
 using Bannerlord.RTSCameraLite.Config;
 using Bannerlord.RTSCameraLite.Core;
+using Bannerlord.RTSCameraLite.Doctrine;
 using Bannerlord.RTSCameraLite.Input;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.View.MissionViews;
@@ -10,7 +11,7 @@ using TaleWorlds.MountAndBlade.View.MissionViews;
 namespace Bannerlord.RTSCameraLite.Mission
 {
     /// <summary>
-    /// Mission shell: commander mode, camera pose, input guards, commander presence scan (Slice 8), commander anchor compute (Slice 9).
+    /// Mission shell: commander mode, camera pose, input guards, presence/doctrine/eligibility scans (Slice 8+), commander anchor (Slice 9).
     /// </summary>
     public sealed class CommanderMissionView : MissionView
     {
@@ -22,6 +23,7 @@ namespace Bannerlord.RTSCameraLite.Mission
         private readonly CommanderNativeInputGuard _nativeInputGuard = new CommanderNativeInputGuard();
         private readonly FormationDataAdapter _formationDataAdapter = new FormationDataAdapter();
         private CommanderAssignmentService _commanderAssignmentService;
+        private FormationEligibilityRules _formationEligibilityRules;
         private float _commanderPresenceScanTimer;
         private const float CommanderPresenceScanIntervalSeconds = 2.5f;
         private CommanderConfig _commanderConfig = CommanderConfigDefaults.CreateDefault();
@@ -72,6 +74,7 @@ namespace Bannerlord.RTSCameraLite.Mission
                 $"{ModConstants.ModuleId}: commander config — loaded={loadResult.Loaded}, usedDefaults={loadResult.UsedDefaults}, createdFile={loadResult.CreatedDefaultFile}: {loadResult.Message}");
             _commanderAssignmentService = new CommanderAssignmentService(_formationDataAdapter);
             _commanderAssignmentService.ApplyDetectionSettings(CommanderDetectionSettings.FromConfig(_commanderConfig));
+            _formationEligibilityRules = new FormationEligibilityRules(FormationEligibilitySettings.FromConfig(_commanderConfig));
             _anchorResolver = new CommanderAnchorResolver(_formationDataAdapter);
             _anchorSettings = CommanderAnchorSettings.FromConfig(_commanderConfig);
             _anchorScanAccum = CommanderAnchorScanIntervalSeconds;
@@ -166,6 +169,15 @@ namespace Bannerlord.RTSCameraLite.Mission
                     {
                         commanded++;
                     }
+
+                    if (_commanderConfig.EnableEligibilityDebug && _formationEligibilityRules != null)
+                    {
+                        FormationDoctrineProfile doctrine = DoctrineScoreCalculator.Compute(formation, result, _formationDataAdapter);
+                        FormationEligibilityResult elig = _formationEligibilityRules.Evaluate(formation, result, doctrine);
+                        string label = formation.RepresentativeClass.ToString();
+                        ModLogger.LogDebug(
+                            $"{ModConstants.ModuleId}: Eligibility: {label} allowed {FormatEligibilityTypes(elig.AllowedFormationTypes)}; denied {FormatEligibilityTypes(elig.DeniedFormationTypes)}.");
+                    }
                 }
             }
             catch (System.Exception ex)
@@ -175,6 +187,16 @@ namespace Bannerlord.RTSCameraLite.Mission
             }
 
             ModLogger.LogDebug($"{ModConstants.ModuleId}: Commander scan: {commanded}/{total} formations commanded");
+        }
+
+        private static string FormatEligibilityTypes(System.Collections.Generic.List<AllowedFormationType> types)
+        {
+            if (types == null || types.Count == 0)
+            {
+                return "(none)";
+            }
+
+            return string.Join(", ", types);
         }
 
         private void MaybeScanCommanderAnchors(float dt)

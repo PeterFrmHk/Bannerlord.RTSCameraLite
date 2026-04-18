@@ -41,5 +41,17 @@
   "CavalryCommanderBackOffset": 10.0,
   "SkirmisherCommanderBackOffset": 9.0,
   "AnchorAllowedRadius": 4.0,
-  "EnableCommanderAnchorDebug": true
+  "EnableCommanderAnchorDebug": true,
+
+  "BasicLineMinimumDiscipline": 0.20,
+  "LooseMinimumDiscipline": 0.25,
+  "ShieldWallMinimumDiscipline": 0.45,
+  "SquareMinimumDiscipline": 0.55,
+  "CircleMinimumDiscipline": 0.60,
+  "AdvancedAdaptiveMinimumDiscipline": 0.75,
+  "MinimumShieldRatioForShieldWall": 0.35,
+  "MinimumPolearmOrShieldRatioForSquare": 0.45,
+  "MinimumMountedRatioForMountedWide": 0.60,
+  "MinimumHorseArcherRatioForHorseArcherLoose": 0.45,
+  "EnableEligibilityDebug": true
 }

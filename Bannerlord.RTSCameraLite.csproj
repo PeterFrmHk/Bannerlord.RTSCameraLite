@@ -11,7 +11,7 @@
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
     <FileVersion>0.1.0.0</FileVersion>
-    <InformationalVersion>0.1.0-slice9</InformationalVersion>
+    <InformationalVersion>0.1.0-slice11</InformationalVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -19,7 +19,7 @@
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
   </PropertyGroup>
 
-  <!-- Slice 9: commander anchor behind formation + formation adapter extensions. -->
+  <!-- Slice 11: formation eligibility rules (doctrine + composition). -->
   <ItemGroup>
     <Compile Remove="src\**\*.cs" />
     <Compile Include="src\SubModule.cs" />
@@ -55,6 +55,13 @@
     <Compile Include="src\Commander\CommanderAnchorResolver.cs" />
     <Compile Include="src\Commander\CommanderAnchorSettings.cs" />
     <Compile Include="src\Commander\CommanderAnchorState.cs" />
+    <Compile Include="src\Doctrine\AllowedFormationType.cs" />
+    <Compile Include="src\Doctrine\FormationCompositionProfile.cs" />
+    <Compile Include="src\Doctrine\FormationDoctrineProfile.cs" />
+    <Compile Include="src\Doctrine\DoctrineScoreCalculator.cs" />
+    <Compile Include="src\Doctrine\FormationEligibilitySettings.cs" />
+    <Compile Include="src\Doctrine\FormationEligibilityResult.cs" />
+    <Compile Include="src\Doctrine\FormationEligibilityRules.cs" />
   </ItemGroup>
 
   <ItemGroup>
