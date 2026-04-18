@@ -1,0 +1,26 @@
+{
+  "StartBattlesInCommanderMode": true,
+  "ModeActivationKey": "Backspace",
+  "OverrideNativeBackspaceOrders": true,
+  "EnableDebugFallbackToggle": true,
+  "DebugFallbackToggleKey": "F10",
+
+  "MoveForwardKey": "W",
+  "MoveBackKey": "S",
+  "MoveLeftKey": "A",
+  "MoveRightKey": "D",
+  "RotateLeftKey": "Q",
+  "RotateRightKey": "E",
+  "FastMoveKey": "LeftShift",
+  "ZoomInKey": "R",
+  "ZoomOutKey": "F",
+
+  "MoveSpeed": 12.0,
+  "FastMoveMultiplier": 2.5,
+  "RotationSpeedDegrees": 90.0,
+  "ZoomSpeed": 3.0,
+  "DefaultHeight": 18.0,
+  "MinHeight": 6.0,
+  "MaxHeight": 60.0,
+  "DefaultPitch": 60.0
+}

@@ -1,12 +1,87 @@
+using Bannerlord.RTSCameraLite.Config;
 using TaleWorlds.InputSystem;
 
 namespace Bannerlord.RTSCameraLite.Input
 {
     /// <summary>
-    /// Centralized key reads for RTS Commander Mode (Slice 2). Do not poll <see cref="IInputContext"/> for these keys elsewhere.
+    /// Centralized key reads for RTS Commander Mode. Key names come from JSON and are parsed defensively (Slice 6).
     /// </summary>
     public sealed class CommanderInputReader
     {
+        private InputKey _modeActivationKey = InputKey.BackSpace;
+        private InputKey _debugFallbackToggleKey = InputKey.F10;
+        private bool _debugFallbackEnabled = true;
+        private InputKey _moveForwardKey = InputKey.W;
+        private InputKey _moveBackKey = InputKey.S;
+        private InputKey _moveLeftKey = InputKey.A;
+        private InputKey _moveRightKey = InputKey.D;
+        private InputKey _rotateLeftKey = InputKey.Q;
+        private InputKey _rotateRightKey = InputKey.E;
+        private InputKey _fastMoveKey = InputKey.LeftShift;
+        private InputKey _zoomInKey = InputKey.R;
+        private InputKey _zoomOutKey = InputKey.F;
+
+        public InputKey ModeActivationKey => _modeActivationKey;
+
+        public InputKey DebugFallbackToggleKey => _debugFallbackToggleKey;
+
+        public bool DebugFallbackEnabled => _debugFallbackEnabled;
+
+        public InputKey MoveForwardKey => _moveForwardKey;
+
+        public InputKey MoveBackKey => _moveBackKey;
+
+        public InputKey MoveLeftKey => _moveLeftKey;
+
+        public InputKey MoveRightKey => _moveRightKey;
+
+        public InputKey RotateLeftKey => _rotateLeftKey;
+
+        public InputKey RotateRightKey => _rotateRightKey;
+
+        public InputKey FastMoveKey => _fastMoveKey;
+
+        public InputKey ZoomInKey => _zoomInKey;
+
+        public InputKey ZoomOutKey => _zoomOutKey;
+
+        /// <summary>
+        /// Applies JSON config strings; invalid names fall back to <see cref="CommanderConfigDefaults"/> key names.
+        /// </summary>
+        public void ApplyConfig(CommanderConfig config)
+        {
+            CommanderConfig d = CommanderConfigDefaults.CreateDefault();
+
+            _modeActivationKey = ParseBinding(config?.ModeActivationKey, d.ModeActivationKey, InputKey.BackSpace);
+            _debugFallbackEnabled = config?.EnableDebugFallbackToggle ?? d.EnableDebugFallbackToggle;
+            _debugFallbackToggleKey = ParseBinding(config?.DebugFallbackToggleKey, d.DebugFallbackToggleKey, InputKey.F10);
+
+            _moveForwardKey = ParseBinding(config?.MoveForwardKey, d.MoveForwardKey, InputKey.W);
+            _moveBackKey = ParseBinding(config?.MoveBackKey, d.MoveBackKey, InputKey.S);
+            _moveLeftKey = ParseBinding(config?.MoveLeftKey, d.MoveLeftKey, InputKey.A);
+            _moveRightKey = ParseBinding(config?.MoveRightKey, d.MoveRightKey, InputKey.D);
+            _rotateLeftKey = ParseBinding(config?.RotateLeftKey, d.RotateLeftKey, InputKey.Q);
+            _rotateRightKey = ParseBinding(config?.RotateRightKey, d.RotateRightKey, InputKey.E);
+            _fastMoveKey = ParseBinding(config?.FastMoveKey, d.FastMoveKey, InputKey.LeftShift);
+            _zoomInKey = ParseBinding(config?.ZoomInKey, d.ZoomInKey, InputKey.R);
+            _zoomOutKey = ParseBinding(config?.ZoomOutKey, d.ZoomOutKey, InputKey.F);
+        }
+
+        private static InputKey ParseBinding(string candidate, string defaultName, InputKey hardFallback)
+        {
+            if (CommanderInputKeyParser.TryParse(candidate, out InputKey parsed))
+            {
+                return parsed;
+            }
+
+            if (CommanderInputKeyParser.TryParse(defaultName, out InputKey fromDefault))
+            {
+                return fromDefault;
+            }
+
+            return hardFallback;
+        }
+
         public bool TryConsumeCommanderModeToggle(IInputContext input)
         {
             if (input == null)
@@ -16,7 +91,7 @@ namespace Bannerlord.RTSCameraLite.Input
 
             try
             {
-                return input.IsKeyReleased(InputKey.BackSpace);
+                return input.IsKeyReleased(_modeActivationKey);
             }
             catch
             {
@@ -25,18 +100,18 @@ namespace Bannerlord.RTSCameraLite.Input
         }
 
         /// <summary>
-        /// DEBUG / DEVELOPMENT ONLY — emergency toggle if Backspace is unavailable.
+        /// DEBUG / DEVELOPMENT ONLY — optional emergency toggle when the primary activation key is unavailable.
         /// </summary>
         public bool TryConsumeEmergencyDebugCommanderToggle(IInputContext input)
         {
-            if (input == null)
+            if (!_debugFallbackEnabled || input == null)
             {
                 return false;
             }
 
             try
             {
-                return input.IsKeyReleased(InputKey.F10);
+                return input.IsKeyReleased(_debugFallbackToggleKey);
             }
             catch
             {

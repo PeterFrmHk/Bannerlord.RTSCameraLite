@@ -1,5 +1,6 @@
 using Bannerlord.RTSCameraLite.Adapters;
 using Bannerlord.RTSCameraLite.Camera;
+using Bannerlord.RTSCameraLite.Config;
 using Bannerlord.RTSCameraLite.Core;
 using Bannerlord.RTSCameraLite.Input;
 using TaleWorlds.MountAndBlade;
@@ -8,7 +9,7 @@ using TaleWorlds.MountAndBlade.View.MissionViews;
 namespace Bannerlord.RTSCameraLite.Mission
 {
     /// <summary>
-    /// Slice 2–3: mission shell, commander mode, adapter boundaries (camera bridge not wired — no camera override).
+    /// Mission shell: commander mode, camera bridge probe, file-backed config (Slice 6).
     /// </summary>
     public sealed class CommanderMissionView : MissionView
     {
@@ -17,6 +18,7 @@ namespace Bannerlord.RTSCameraLite.Mission
         private readonly CameraBridge _cameraBridge = new CameraBridge();
         private readonly CommanderCameraController _cameraController = new CommanderCameraController();
         private readonly BackspaceConflictGuard _backspaceConflictGuard = new BackspaceConflictGuard();
+        private CommanderConfig _commanderConfig = CommanderConfigDefaults.CreateDefault();
         private bool _loggedShellActive;
         private bool _lastLoggedEnabled;
         private bool _hasLoggedEnabledState;
@@ -36,9 +38,25 @@ namespace Bannerlord.RTSCameraLite.Mission
                 return;
             }
 
-            _commanderModeState.Enable(ModConstants.CommanderShellDefaultEnableReason);
+            ConfigLoadResult loadResult = CommanderConfigService.LoadOrCreate();
+            _commanderConfig = loadResult.Config ?? CommanderConfigDefaults.CreateDefault();
+            _commanderInput.ApplyConfig(_commanderConfig);
+            _cameraController.ApplyMovementSettings(CommanderCameraMovementSettings.FromConfig(_commanderConfig));
             _cameraController.InitializeFromMission(Mission);
-            _backspaceConflictGuard.EnterCommanderMode();
+
+            if (_commanderConfig.StartBattlesInCommanderMode)
+            {
+                _commanderModeState.Enable(ModConstants.CommanderShellDefaultEnableReason);
+                _backspaceConflictGuard.EnterCommanderMode();
+            }
+            else
+            {
+                _commanderModeState.Disable("config: StartBattlesInCommanderMode false");
+                _backspaceConflictGuard.ExitCommanderMode();
+            }
+
+            ModLogger.LogDebug(
+                $"{ModConstants.ModuleId}: commander config — loaded={loadResult.Loaded}, usedDefaults={loadResult.UsedDefaults}, createdFile={loadResult.CreatedDefaultFile}: {loadResult.Message}");
             LogShellActiveOnce();
             LogEnabledTransition();
         }
@@ -71,6 +89,7 @@ namespace Bannerlord.RTSCameraLite.Mission
                 LogEnabledTransition();
                 if (_commanderModeState.IsEnabled)
                 {
+                    _cameraController.ApplyMovementSettings(CommanderCameraMovementSettings.FromConfig(_commanderConfig));
                     _cameraController.InitializeFromMission(Mission);
                 }
             }

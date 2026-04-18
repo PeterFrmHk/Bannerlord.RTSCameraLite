@@ -8,6 +8,9 @@ namespace Bannerlord.RTSCameraLite.Core
     public static class ModLogger
     {
         private static bool _uiReady;
+        private static readonly object WarningOnceLock = new object();
+        private static readonly System.Collections.Generic.HashSet<string> WarningOnceKeys =
+            new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal);
 
         public static void MarkUiReady()
         {
@@ -28,6 +31,27 @@ namespace Bannerlord.RTSCameraLite.Core
             {
                 // Logging must never crash the game.
             }
+        }
+
+        /// <summary>
+        /// Emits a single diagnostic line per <paramref name="key"/> for the process (config fallback, path errors, etc.).
+        /// </summary>
+        public static void LogWarningOnce(string key, string message)
+        {
+            if (string.IsNullOrEmpty(key))
+            {
+                key = "default";
+            }
+
+            lock (WarningOnceLock)
+            {
+                if (!WarningOnceKeys.Add(key))
+                {
+                    return;
+                }
+            }
+
+            LogDebug($"[WARN:{key}] {message}");
         }
 
         /// <summary>

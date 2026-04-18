@@ -1,17 +1,26 @@
+using System;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
 namespace Bannerlord.RTSCameraLite.Camera
 {
     /// <summary>
-    /// Holds commander camera pose state. Slice 3: no movement/delta logic — seeding only.
+    /// Commander RTS camera pose state; tuning comes from <see cref="CommanderCameraMovementSettings"/> (Slice 6).
     /// </summary>
     public sealed class CommanderCameraController
     {
         private CommanderCameraPose _pose;
         private bool _hasPose;
+        private CommanderCameraMovementSettings _movementSettings = CommanderCameraMovementSettings.FromConfig(null);
 
         public bool HasPose => _hasPose;
+
+        public CommanderCameraMovementSettings MovementSettings => _movementSettings;
+
+        public void ApplyMovementSettings(CommanderCameraMovementSettings settings)
+        {
+            _movementSettings = settings ?? CommanderCameraMovementSettings.FromConfig(null);
+        }
 
         public void InitializeFromMission(TaleWorlds.MountAndBlade.Mission mission)
         {
@@ -35,12 +44,13 @@ namespace Bannerlord.RTSCameraLite.Camera
             }
 
             Vec3 p = agent.Position;
+            float height = Math.Max(_movementSettings.MinHeight, Math.Min(_movementSettings.MaxHeight, _movementSettings.DefaultHeight));
             _pose = new CommanderCameraPose
             {
                 Position = p,
                 Yaw = 0f,
-                Pitch = 0f,
-                Height = p.z
+                Pitch = _movementSettings.DefaultPitch,
+                Height = height
             };
             _hasPose = true;
         }
