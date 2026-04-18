@@ -2,7 +2,7 @@
 
 **Scope:** Research only. No production mod code (`src/`) was changed for this document. All **signatures** below were read from **local Steam-installed** managed DLLs via **PowerShell reflection** (`Assembly.LoadFrom`, `GetMethod`, `GetProperty`, `GetEnumNames`). Where a fact could not be confirmed from those assemblies alone, it is marked **UNCERTAIN**.
 
-**Related:** [`native-order-hooks.md`](native-order-hooks.md) (narrow order-API note), [`slice-hard-gates.md`](../slice-hard-gates.md) (Slice 12 research gate).
+**Related:** [`native-order-hooks.md`](native-order-hooks.md) (narrow order-API note), [`slice-hard-gates.md`](../slice-hard-gates.md) (Slice 12 research gate). **Slice 0 decisions:** [`implementation-decision-slice0.md`](implementation-decision-slice0.md).
 
 ---
 
@@ -42,6 +42,8 @@
 
 ## 3. Formation model
 
+**Deeper layout / lattice reads** (`IFormationArrangement`, rank/interval semantics, captain reads) live in [`base-game-formation-layout-scan.md`](base-game-formation-layout-scan.md).
+
 ### Representation
 
 - A **`Team`** owns multiple **`Formation`** instances keyed by **`TaleWorlds.Core.FormationClass`** via **`Team.GetFormation(FormationClass)`** (public instance method observed on `Team`).
@@ -73,7 +75,7 @@ On the inspected **`TaleWorlds.MountAndBlade.dll`**, reflection **`GetProperty("
 
 | Kind | Type | Notes |
 | --- | --- | --- |
-| Discrete order kinds | **`OrderType`** enum | Includes **`Charge`**, **`StandYourGround`**, **`Move`**, **`Retreat`**, **`Advance`**, **`FaceDirection`**, arrangement/cohesion/mount/AI control values, **`HoldFire`**, etc. (enum names enumerated via reflection). |
+| Discrete order kinds | **`OrderType`** enum | Includes **`Charge`**, **`ChargeWithTarget`**, **`StandYourGround`**, **`Move`**, **`Retreat`**, **`Advance`**, **`LookAtEnemy`**, **`LookAtDirection`**, arrangement/cohesion/mount/AI control values, **`HoldFire`**, etc. (full name list in **Appendix A**). |
 | Movement payload | **`MovementOrder`** struct | Public **static** factories observed (see below). |
 | Facets | **`FacingOrder`**, **`ArrangementOrder`**, **`FormOrder`**, … | Applied through **`Formation.SetFacingOrder`**, **`SetArrangementOrder`**, **`SetFormOrder`**, … |
 
@@ -107,7 +109,7 @@ On the inspected **`TaleWorlds.MountAndBlade.dll`**, reflection **`GetProperty("
 
 **Event surface:** **`Team.add_OnOrderIssued(OnOrderIssuedDelegate)`** / remove — delegate **`Invoke`** signature observed as:
 
-`void Invoke(OrderType orderType, MBReadOnlyList<Formation> formations, OrderController orderController, object[] array)`
+`void Invoke(OrderType orderType, TaleWorlds.Library.MBReadOnlyList<Formation> formations, OrderController orderController, System.Object[] extra)`
 
 (**public** multicast pattern.)
 
@@ -195,9 +197,9 @@ Parameters assume **`Mission.MainAgent`** non-null, **`Mission.Scene`** non-null
 
 ---
 
-## 7. Recommended implementation boundary (`NativeOrderExecutor`)
+## 7. Recommended implementation boundary (`NativeOrderExecutor` / `NativeOrderPrimitiveExecutor`)
 
-**Goal:** keep version-sensitive assumptions in **one** place.
+**Goal:** keep version-sensitive assumptions in **one** place. **`NativeOrderPrimitiveExecutor`** is the doctrine research name for the same boundary as the repo’s **`NativeOrderExecutor`**.
 
 | Rule | Rationale |
 | --- | --- |
@@ -209,8 +211,47 @@ Parameters assume **`Mission.MainAgent`** non-null, **`Mission.Scene`** non-null
 
 ---
 
-## 8. Owner follow-ups
+## 8. Backspace vs native order UI (**UNCERTAIN** bindings)
+
+**Goal:** avoid RTS hotkeys colliding with vanilla **mission order** interactions.
+
+| Observation | Source (local install) |
+| --- | --- |
+| `InputKey` defines **`BackSpace`** | `TaleWorlds.InputSystem.dll` (enum member present via reflection). |
+| Order UI stack exists | `TaleWorlds.MountAndBlade.View.dll` exports `MissionOrderUIHandler`, `MissionOrderOfBattleUIHandler`, and `...VisualOrders...` types (exported-type name scan). |
+| Hotkey *labels* exist for mission orders | `Modules\Native\ModuleData\global_strings.xml` includes `MissionOrderHotkeyCategory_ViewOrders`, `..._SelectOrder1`, etc. |
+
+**Decision (Slice 0):** treat **`BackSpace` as high-risk for conflicts** with native order UX; keep RTS bindings **away from Backspace** in defaults and document player rebind awareness.
+
+**UNCERTAIN:** the **actual default** key table mapping for “view orders” lives in **engine / user settings**, not in a single static XML line found in this scan — confirm on a clean profile in-game.
+
+**Harmony:** **not required** to mitigate; input policy + configurable keys are sufficient **if** the mod never steals Backspace while native orders must fire.
+
+---
+
+## 9. Owner follow-ups
 
 1. ILSpy **`TaleWorlds.MountAndBlade.Formation`** on **the exact DLL** your mod compiles against — confirm whether **`Team`** exists or was replaced by **`PlayerOwner`** / other means on **v1.3.15**.  
 2. In-game verify **`IsFormationSelectable`** vs **`IsFormationListening`** for player-issued RTS orders during deployment vs battle.  
-3. Keep this document next to **`docs/research/native-order-hooks.md`**; the latter stays the **Slice 12 hook cheat sheet**, this file is the **broader formation/order model**.
+3. Keep this document next to **`docs/research/native-order-hooks.md`**; the latter stays the **Slice 12 hook cheat sheet**, this file is the **broader formation/order model**.  
+4. In-game: confirm which **mission order** screen toggles use **Backspace** on your key profile; update defaults accordingly.
+
+---
+
+## 9. Access levels (representative)
+
+| Type | Typical issuance / read API | Access |
+| --- | --- | --- |
+| `OrderController` | `SetOrder*`, selection, `IsFormationSelectable` | **public** |
+| `Formation` | `SetMovementOrder`, `SetFacingOrder`, `SetFormOrder`, `SetTargetFormation`, counts, order facets | **public** |
+| `Team` | `GetFormation`, `PlayerOrderController`, `OnOrderIssued` | **public** |
+| `MovementOrder` | Static factories (`MovementOrderMove`, …) | **public static** |
+| `OrderType` | enum values | **public** |
+
+**UNCERTAIN / avoid:** `OrderController.get_simulationFormations()` is **public** but looks like an engine-internal accessor; do not depend on it without ILSpy + TW policy review.
+
+---
+
+## Appendix A — `OrderType` enum names (verified, local DLL)
+
+`None`, `Move`, `MoveToLineSegment`, `MoveToLineSegmentWithHorizontalLayout`, `Charge`, `ChargeWithTarget`, `StandYourGround`, `FollowMe`, `FollowEntity`, `Retreat`, `AdvanceTenPaces`, `FallBackTenPaces`, `Advance`, `FallBack`, `LookAtEnemy`, `LookAtDirection`, `ArrangementLine`, `ArrangementCloseOrder`, `ArrangementLoose`, `ArrangementCircular`, `ArrangementSchiltron`, `ArrangementVee`, `ArrangementColumn`, `ArrangementScatter`, `FormCustom`, `FormDeep`, `FormWide`, `FormWider`, `CohesionHigh`, `CohesionMedium`, `CohesionLow`, `HoldFire`, `FireAtWill`, `RideFree`, `Mount`, `Dismount`, `AIControlOn`, `AIControlOff`, `Transfer`, `Use`, `AttackEntity`, `PointDefence`, `Count`.

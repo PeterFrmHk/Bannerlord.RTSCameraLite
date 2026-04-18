@@ -12,19 +12,22 @@ This folder holds **engineering research** for `Bannerlord.RTSCameraLite` (**RTS
 
 | Document | Purpose |
 | --- | --- |
-| [`base-game-camera-scan.md`](base-game-camera-scan.md) | MissionView / MissionScreen / Mission camera APIs, candidate paths, restore findings. |
+| [`base-game-camera-scan.md`](base-game-camera-scan.md) | `MissionView` / `MissionScreen` / `Mission` camera APIs, candidate paths, restore findings. |
 | [`camera-hooks.md`](camera-hooks.md) | Slice 5 ILSpy workflow and primary hook summary. |
-| [`base-game-order-scan.md`](base-game-order-scan.md) | Formation / Team / OrderController / MovementOrder / OrderType model. |
+| [`base-game-order-scan.md`](base-game-order-scan.md) | `Team` / `OrderController` / `MovementOrder` / `OrderType` issuance model. |
+| [`base-game-formation-layout-scan.md`](base-game-formation-layout-scan.md) | `Formation` + `IFormationArrangement` reads (position, facing, rank, spacing, order anchors). |
 | [`native-order-hooks.md`](native-order-hooks.md) | Minimal native order issuance cheat sheet (Slice 12 gate). |
+| [`native-cavalry-command-sequence.md`](native-cavalry-command-sequence.md) | Doctrine cavalry cadence vs. native primitives (Slice 13 research). |
 | [`installed-mod-reference-scan.md`](installed-mod-reference-scan.md) | Patterns from local Modules + Steam Workshop installs (reference-only). |
+| [`implementation-decision-slice0.md`](implementation-decision-slice0.md) | Slice 0 consolidation: safest paths, gates, revised slice order. |
 | [`public-reference-scan.md`](public-reference-scan.md) | Additional public-surface notes (if present in repo). |
 
 ## Planned / optional research (backlog)
 
 | Topic | Goal |
 | --- | --- |
-| **Cavalry order sequence** | Map advance/charge/reform primitives per build for Slice 13. |
-| **Commander anchor placement** | Identify safe APIs for commander offset / formation facing (Slice 7B). |
+| **ILSpy body reads** | `MissionScreen.HandleUserInput`, `MovementOrder` internals, `Formation.SetPositioning` call sites. |
+| **Commander anchor placement** | Confirm parameter semantics before automated placement (Slice 7B). |
 | **Morale / training readers** | Document read-only signals for doctrine eligibility (Slice 8B). |
 | **Gauntlet / order UI interaction** | Only if overlay work is explicitly approved; otherwise avoid. |
 

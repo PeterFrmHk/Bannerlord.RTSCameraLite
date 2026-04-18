@@ -1,6 +1,6 @@
 # Base game camera & mission integration scan
 
-**Scope:** Research only. No production mod code was changed for this document. Signatures and types below were taken from **local Steam-installed assemblies** via **PowerShell `[System.Reflection.Assembly]::LoadFrom` / reflection** (equivalent surface to ILSpy). If a member is marked **UNCERTAIN**, it was not re-verified on this pass or depends on runtime context.
+**Scope:** Research only. No production mod code was changed for this document. **Slice 0 decisions:** see [`implementation-decision-slice0.md`](implementation-decision-slice0.md). Signatures and types below were taken from **local Steam-installed assemblies** via **PowerShell `[System.Reflection.Assembly]::LoadFrom` / reflection** (equivalent surface to ILSpy). If a member is marked **UNCERTAIN**, it was not re-verified on this pass or depends on runtime context.
 
 **Related:** [`camera-hooks.md`](camera-hooks.md) (Slice 5 workflow), [`slice-hard-gates.md`](../slice-hard-gates.md).
 
@@ -16,7 +16,7 @@
 | **View assembly location (this install)** | **`TaleWorlds.MountAndBlade.View.dll` is not in the root `bin\Win64_Shipping_Client` listing**; it was found at `<install>\Modules\Native\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.View.dll` (matches Native `SubModule` `DLLName`). |
 | **Assemblies loaded for this scan** | From root bin: `TaleWorlds.MountAndBlade.dll`, `TaleWorlds.Engine.dll`, `TaleWorlds.Core.dll`, `TaleWorlds.Library.dll`, `TaleWorlds.InputSystem.dll`, `TaleWorlds.ScreenSystem.dll`, `TaleWorlds.MountAndBlade.ViewModelCollection.dll`, and other `TaleWorlds*.dll` in the same folder to satisfy `GetExportedTypes` dependencies. From Native module bin: `TaleWorlds.MountAndBlade.View.dll`. |
 | **Tool** | PowerShell 5.x + .NET reflection (`LoadFrom`, `GetType`, `GetMethods`, `GetProperties`). |
-| **Date** | **2026-04-18** |
+| **Date** | **2026-04-17** (re-verified MissionScreen camera fields) |
 
 ---
 
@@ -69,6 +69,16 @@
 | `OnMissionTick` | `void OnMissionTick(float)` | **public** | Per-frame mission tick. |
 | `DebugInput` | `IInputContext get_DebugInput()` | **public** | Secondary input context on base behavior. |
 
+### 3.2a Battle mission lifecycle (simulation vs. screen)
+
+| Layer | Types / hooks | Role |
+| --- | --- | --- |
+| **Simulation** | `Mission` (`get_MissionEnded`, `get_MissionIsEnding`, `EndMission`, …), `MissionBehavior` (`OnMissionTick`, `OnEndMissionInternal`, …) | Gameplay state, agents, teams, `SetCameraFrame` family. |
+| **Presentation** | `MissionView` (`OnMissionScreenTick`, `OnMissionScreenInitialize`, `OnMissionScreenFinalize`, `UpdateOverridenCamera`) | Camera override + view tick ordering. |
+| **Screen** | `MissionScreen` (`Activate`, `Deactivate`, `HandleUserInput`, `IsOrderMenuOpen`) | UI + combat camera host. |
+
+**UNCERTAIN:** exact tick order between `MissionScreen.HandleUserInput` and `MissionView.OnMissionScreenTick` relative to `MissionBehavior.OnMissionTick` — **requires** runtime logging on one mission.
+
 ---
 
 ### 3.3 `TaleWorlds.MountAndBlade.View.MissionViews.MissionView` (`TaleWorlds.MountAndBlade.View.dll`)
@@ -98,6 +108,15 @@
 | `SetExtraCameraParameters` | `void SetExtraCameraParameters(bool newForceCanZoom, float newCameraRayCastStartingPointOffset)` | **public** | Tuning — **UNCERTAIN** value ranges. |
 | `LockCameraMovement` | `bool get_LockCameraMovement()` | **public** | Query lock state. |
 | `Mission` | `Mission get_Mission()` | **public** | Link back to simulation. |
+| `CameraBearing` | `float get_CameraBearing()` / `void set_CameraBearing(float)` | **public** | Native bearing drive; optional mirror for RTS pose sync — **UNCERTAIN** interaction when overriding `CombatCamera.Frame`. |
+| `CameraElevation` | `float get_CameraElevation()` / `void set_CameraElevation(float)` | **public** | Same as above. |
+| `MaxCameraZoom` | `float get_MaxCameraZoom()` | **public** | Zoom ceiling helper (`Mission.GetMainAgentMaxCameraZoom()` exists separately on simulation). |
+| `CameraResultDistanceToTarget` | `float get_CameraResultDistanceToTarget()` | **public** | Distance readout — **UNCERTAIN** use for RTS. |
+| `CameraViewAngle` | `float get_CameraViewAngle()` | **public** | FOV-related — **UNCERTAIN**. |
+| `IsMissionTickable` | `bool get_IsMissionTickable()` | **public** | Gate work when simulation paused — **UNCERTAIN** all modes. |
+| `IsOrderMenuOpen` | `bool get_IsOrderMenuOpen()` | **public** | **Input / UI coupling:** use with RTS toggle design — see [`implementation-decision-slice0.md`](implementation-decision-slice0.md). |
+| `InputManager` | `IInputContext get_InputManager()` | **public** | Alternate input surface vs. `MissionView.Input` — **UNCERTAIN** which matches battle keys on this build. |
+| `HandleUserInput` | `void HandleUserInput(float dt)` | **public** | Native per-frame input routing — **Backspace / order menu conflict** requires ILSpy body read (**UNCERTAIN** from signatures alone). |
 
 **Restore / naming gap (important):** A quick export scan of `TaleWorlds.MountAndBlade.View.dll` on **this 1.3.15 install** did **not** surface public methods named **`ActivateMainAgentCamera`**, **`ResetCameraMode`**, **`SwitchToDefaultCameraMode`**, or **`ActivateMainAgentSpectatorCamera`** (names the mod’s `CameraBridge` tries via reflection). Those names may be **removed, renamed, moved, or non-public** on 1.3.x — treat as **UNCERTAIN / build-specific**. Re-scan with ILSpy on **your** `MissionScreen` inheritance chain before relying on them.
 
