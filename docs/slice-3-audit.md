@@ -2,53 +2,49 @@
 
 ## Purpose
 
-Introduce **`RTSCameraPose`**, **`RTSCameraController`**, and **`CameraBridge`** so RTS state (Slice 2) can drive a **pose model** without WASD movement, without Harmony, and without scattering native camera calls outside the bridge.
+Pose model (`RTSCameraPose`), controller (`RTSCameraController`), and **`CameraBridge`** as the **only** place for version-sensitive Bannerlord camera calls—without WASD, Harmony, or settings UI.
 
-## Function spec
+## Function spec (minimal shape)
 
-- **Pose:** `Vec3` position, yaw, pitch, height.
-- **Controller:** `InitializeFromAgent`, `GetPose`, `Reset`; defaults pitch **60f**, height **18f**; no movement logic.
-- **Bridge:** `TryApply(Mission, RTSCameraPose)` → `CameraBridgeResult`; all future Bannerlord camera APIs **only** in `CameraBridge`; until wired, returns **not applied** with message **`Camera bridge not wired`**.
-- **Mission behavior:** When RTS is **enabled**, ensure controller init from **`Mission.MainAgent`**, call **`CameraBridge.TryApply`**, log bridge message **once per enable** (not every tick).
+- **`RTSCameraPose`:** internal sealed class; mutable `Position`, `Yaw`, `Pitch`, `Height`.
+- **`RTSCameraController`:** `InitializeFromAgent(Agent)` (null-safe base position), `GetPose()`, `Reset()`; default height **18f**, pitch **60f**; position lifted by height on Z; **Yaw** **0f** for now.
+- **`CameraBridge`:** internal sealed class; instance **`TryApply(TaleWorlds.MountAndBlade.Mission, RTSCameraPose)`**; null checks → `"Mission or pose missing"`; otherwise **`NotWired()`** until assemblies are inspected and wired.
+- **`CameraBridgeResult`:** internal readonly struct; **`NotWired()`**, **`Success()`** for future use.
+- **`RTSCameraMissionBehavior`:** holds **`CameraBridge`** instance; while RTS enabled, updates pose from **`MainAgent`**, calls **`TryApply`**, logs result **once per enable**.
 
 ## PRISM
 
-- **A:** Move the camera immediately with full RTS controls.
-- **¬A:** Camera APIs differ by build; controller and bridge must exist before motion.
-- **A\*:** Slice 3 adds pose + bridge seam + safe no-op; movement comes later.
+- **A:** Directly manipulate camera from mission behavior.
+- **¬A:** Bannerlord camera APIs are version-sensitive and must be isolated.
+- **A\*:** Add **`CameraBridge`** as the only camera API contact point.
 
 ## Tests
 
-- [ ] `dotnet build` passes
+- [ ] Build passes
 - [ ] Custom battle loads
 - [ ] F10 enables RTS state
-- [ ] Controller initializes pose from player position when `MainAgent` exists
-- [ ] `CameraBridge.TryApply` runs safely while enabled
-- [ ] If bridge is not wired, **no crash**
-- [ ] No Harmony, no WASD movement, no settings UI
+- [ ] Camera controller initializes
+- [ ] `CameraBridge.TryApply` is reached
+- [ ] No crash while bridge is no-op
+- [ ] No camera movement yet
 
 ## Audit
 
 ### Implemented
 
-- `src/Camera/RTSCameraPose.cs`
-- `src/Camera/RTSCameraController.cs`
-- `src/Camera/CameraBridge.cs`
-- `src/Camera/CameraBridgeResult.cs`
-- `src/Mission/RTSCameraMissionBehavior.cs` integration
+- `src/Camera/RTSCameraPose.cs`, `RTSCameraController.cs`, `CameraBridge.cs`, `CameraBridgeResult.cs`
+- Mission behavior uses **`CameraBridge`** instance only (no static camera calls outside bridge).
 
 ### Not implemented
 
-- Real camera matrix / `MissionScreen` wiring inside `CameraBridge`
-- WASD / mouse orbit / zoom input
-- Harmony, MCM, UI
+- Real camera / `MissionScreen` wiring inside **`CameraBridge.TryApply`**
+- WASD / mouse movement, Harmony, MCM
 
 ### Risks
 
-- `MainAgent` timing: init may wait until agent exists; bridge stays no-op until Slice 4+.
-- Yaw from `LookDirection` is a placeholder heuristic; refine per engine conventions later.
+- **`Mission` identifier** in mission behavior: local variable typed **`TaleWorlds.MountAndBlade.Mission`** avoids **`Bannerlord.RTSCameraLite.Mission`** namespace clash at assignment from **`Mission`** property.
 
 ### Next slice readiness
 
-- [ ] In-game: one log line per F10-enable with `Camera bridge not wired` (expected until wired).
-- [ ] No regressions on F10 toggle or battle exit.
+- [ ] In-game: one log per enable with `Camera bridge not wired` until wired.
+- [ ] Inspect local assemblies; implement **`TryApply`** body; return **`Success()`** when applied.

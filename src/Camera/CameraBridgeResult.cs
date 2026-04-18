@@ -1,9 +1,6 @@
 namespace Bannerlord.RTSCameraLite.Camera
 {
-    /// <summary>
-    /// Outcome of <see cref="CameraBridge.TryApply"/>; keep surface stable across game versions.
-    /// </summary>
-    public readonly struct CameraBridgeResult
+    internal readonly struct CameraBridgeResult
     {
         public bool Applied { get; }
         public string Message { get; }
@@ -17,6 +14,11 @@ namespace Bannerlord.RTSCameraLite.Camera
         public static CameraBridgeResult NotWired()
         {
             return new CameraBridgeResult(false, "Camera bridge not wired");
+        }
+
+        public static CameraBridgeResult Success()
+        {
+            return new CameraBridgeResult(true, "Camera bridge applied");
         }
     }
 }

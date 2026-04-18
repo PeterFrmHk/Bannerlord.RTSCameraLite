@@ -1,9 +1,0 @@
-C:\Documents\Project Pandora\Bannerlord.RTSCameraLite\obj\Release\Bannerlord.RTSCameraLite.csproj.AssemblyReference.cache
-C:\Documents\Project Pandora\Bannerlord.RTSCameraLite\obj\Release\Bannerlord.RTSCameraLite.GeneratedMSBuildEditorConfig.editorconfig
-C:\Documents\Project Pandora\Bannerlord.RTSCameraLite\obj\Release\Bannerlord.RTSCameraLite.AssemblyInfoInputs.cache
-C:\Documents\Project Pandora\Bannerlord.RTSCameraLite\obj\Release\Bannerlord.RTSCameraLite.AssemblyInfo.cs
-C:\Documents\Project Pandora\Bannerlord.RTSCameraLite\obj\Release\Bannerlord.RTSCameraLite.csproj.CoreCompileInputs.cache
-C:\Documents\Project Pandora\Bannerlord.RTSCameraLite\bin\Win64_Shipping_Client\Bannerlord.RTSCameraLite.dll
-C:\Documents\Project Pandora\Bannerlord.RTSCameraLite\bin\Win64_Shipping_Client\Bannerlord.RTSCameraLite.pdb
-C:\Documents\Project Pandora\Bannerlord.RTSCameraLite\obj\Release\Bannerlord.RTSCameraLite.dll
-C:\Documents\Project Pandora\Bannerlord.RTSCameraLite\obj\Release\Bannerlord.RTSCameraLite.pdb
