@@ -1,5 +1,6 @@
 using Bannerlord.RTSCameraLite.Adapters;
 using Bannerlord.RTSCameraLite.Camera;
+using Bannerlord.RTSCameraLite.Commander;
 using Bannerlord.RTSCameraLite.Config;
 using Bannerlord.RTSCameraLite.Core;
 using Bannerlord.RTSCameraLite.Input;
@@ -9,7 +10,7 @@ using TaleWorlds.MountAndBlade.View.MissionViews;
 namespace Bannerlord.RTSCameraLite.Mission
 {
     /// <summary>
-    /// Mission shell: commander mode, internal RTS camera pose, <see cref="CameraBridge"/> hand-off, input ownership / Backspace guard (Slice 7).
+    /// Mission shell: commander mode, internal RTS camera pose, <see cref="CameraBridge"/> hand-off, input ownership / Backspace guard, commander presence scan (Slice 8).
     /// </summary>
     public sealed class CommanderMissionView : MissionView
     {
@@ -19,6 +20,10 @@ namespace Bannerlord.RTSCameraLite.Mission
         private readonly CommanderCameraController _cameraController = new CommanderCameraController();
         private readonly BackspaceConflictGuard _backspaceConflictGuard = new BackspaceConflictGuard();
         private readonly CommanderNativeInputGuard _nativeInputGuard = new CommanderNativeInputGuard();
+        private readonly FormationDataAdapter _formationDataAdapter = new FormationDataAdapter();
+        private CommanderAssignmentService _commanderAssignmentService;
+        private float _commanderPresenceScanTimer;
+        private const float CommanderPresenceScanIntervalSeconds = 2.5f;
         private CommanderConfig _commanderConfig = CommanderConfigDefaults.CreateDefault();
         private bool _loggedShellActive;
         private bool _lastLoggedEnabled;
@@ -61,6 +66,9 @@ namespace Bannerlord.RTSCameraLite.Mission
 
             ModLogger.LogDebug(
                 $"{ModConstants.ModuleId}: commander config — loaded={loadResult.Loaded}, usedDefaults={loadResult.UsedDefaults}, createdFile={loadResult.CreatedDefaultFile}: {loadResult.Message}");
+            _commanderAssignmentService = new CommanderAssignmentService(_formationDataAdapter);
+            _commanderAssignmentService.ApplyDetectionSettings(CommanderDetectionSettings.FromConfig(_commanderConfig));
+            _commanderPresenceScanTimer = CommanderPresenceScanIntervalSeconds;
             LogShellActiveOnce();
             LogEnabledTransition();
         }
@@ -79,6 +87,8 @@ namespace Bannerlord.RTSCameraLite.Mission
             {
                 return;
             }
+
+            MaybeScanFriendlyFormationCommanders(dt);
 
             bool toggle = _commanderInput.TryConsumeCommanderModeToggle(Input);
             if (!toggle)
@@ -111,6 +121,49 @@ namespace Bannerlord.RTSCameraLite.Mission
         {
             EnsureLifecycleCleanup("behavior removed");
             base.OnRemoveBehavior();
+        }
+
+        private void MaybeScanFriendlyFormationCommanders(float dt)
+        {
+            if (_commanderAssignmentService == null || Mission?.PlayerTeam == null)
+            {
+                return;
+            }
+
+            _commanderPresenceScanTimer += dt;
+            if (_commanderPresenceScanTimer < CommanderPresenceScanIntervalSeconds)
+            {
+                return;
+            }
+
+            _commanderPresenceScanTimer = 0f;
+
+            int total = 0;
+            int commanded = 0;
+            try
+            {
+                foreach (Formation formation in Mission.PlayerTeam.FormationsIncludingEmpty)
+                {
+                    if (formation == null || formation.CountOfUnits <= 0)
+                    {
+                        continue;
+                    }
+
+                    total++;
+                    CommanderPresenceResult result = _commanderAssignmentService.DetectCommander(Mission, formation);
+                    if (result.HasCommander)
+                    {
+                        commanded++;
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: Commander scan skipped ({ex.Message})");
+                return;
+            }
+
+            ModLogger.LogDebug($"{ModConstants.ModuleId}: Commander scan: {commanded}/{total} formations commanded");
         }
 
         private void SyncCommanderInputGuardsWithCommanderMode()
@@ -212,6 +265,7 @@ namespace Bannerlord.RTSCameraLite.Mission
             _hasLoggedEnabledState = false;
             _loggedFirstInternalPose = false;
             _loggedCameraBridgeNotAppliedWarning = false;
+            _commanderPresenceScanTimer = 0f;
             _cameraController.Reset();
         }
 

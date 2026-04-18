@@ -97,6 +97,7 @@ namespace Bannerlord.RTSCameraLite.Config
                 }
 
                 ApplyOmittedSlice7PolicyDefaults(json, parsed);
+                CommanderConfigDefaults.HarmonizeLegacyDetectionFields(parsed);
 
                 return new ConfigLoadResult(
                     loaded: true,

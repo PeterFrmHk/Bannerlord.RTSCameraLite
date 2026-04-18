@@ -26,5 +26,12 @@
   "DefaultHeight": 18.0,
   "MinHeight": 6.0,
   "MaxHeight": 60.0,
-  "DefaultPitch": 60.0
+  "DefaultPitch": 60.0,
+
+  "RequireHeroCommanderForAdvancedFormations": true,
+  "AllowCaptainCommander": true,
+  "AllowSergeantFallback": false,
+  "AllowHighestTierFallback": false,
+  "NoCommanderAllowsBasicMobOrders": true,
+  "MinimumCommandAuthorityScore": 0.25
 }

@@ -63,5 +63,19 @@ namespace Bannerlord.RTSCameraLite.Config
         public float MaxHeight { get; set; }
 
         public float DefaultPitch { get; set; }
+
+        // Slice 8 — commander presence policy (detection only; no formation restrictions yet).
+
+        public bool RequireHeroCommanderForAdvancedFormations { get; set; }
+
+        public bool AllowCaptainCommander { get; set; }
+
+        public bool AllowSergeantFallback { get; set; }
+
+        public bool AllowHighestTierFallback { get; set; }
+
+        public bool NoCommanderAllowsBasicMobOrders { get; set; }
+
+        public float MinimumCommandAuthorityScore { get; set; }
     }
 }
