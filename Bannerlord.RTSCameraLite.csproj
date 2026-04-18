@@ -11,7 +11,7 @@
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
     <FileVersion>0.1.0.0</FileVersion>
-    <InformationalVersion>0.1.0-slice8</InformationalVersion>
+    <InformationalVersion>0.1.0-slice9</InformationalVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -19,7 +19,7 @@
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
   </PropertyGroup>
 
-  <!-- Slice 8: commander presence model + formation adapter probes. -->
+  <!-- Slice 9: commander anchor behind formation + formation adapter extensions. -->
   <ItemGroup>
     <Compile Remove="src\**\*.cs" />
     <Compile Include="src\SubModule.cs" />
@@ -52,6 +52,9 @@
     <Compile Include="src\Commander\CommanderPresenceResult.cs" />
     <Compile Include="src\Commander\CommanderDetectionSettings.cs" />
     <Compile Include="src\Commander\CommanderAssignmentService.cs" />
+    <Compile Include="src\Commander\CommanderAnchorResolver.cs" />
+    <Compile Include="src\Commander\CommanderAnchorSettings.cs" />
+    <Compile Include="src\Commander\CommanderAnchorState.cs" />
   </ItemGroup>
 
   <ItemGroup>

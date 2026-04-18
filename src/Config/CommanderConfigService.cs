@@ -98,6 +98,7 @@ namespace Bannerlord.RTSCameraLite.Config
 
                 ApplyOmittedSlice7PolicyDefaults(json, parsed);
                 CommanderConfigDefaults.HarmonizeLegacyDetectionFields(parsed);
+                ApplyOmittedSlice9AnchorDefaults(json, parsed);
 
                 return new ConfigLoadResult(
                     loaded: true,
@@ -177,6 +178,67 @@ namespace Bannerlord.RTSCameraLite.Config
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Omitted Slice 9 keys deserialize to 0 / false — restore anchor defaults when absent from JSON.
+        /// </summary>
+        private static void ApplyOmittedSlice9AnchorDefaults(string json, CommanderConfig parsed)
+        {
+            if (parsed == null || string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            try
+            {
+                using JsonDocument doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                JsonElement root = doc.RootElement;
+                CommanderConfig d = CommanderConfigDefaults.CreateDefault();
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.DefaultCommanderBackOffset)))
+                {
+                    parsed.DefaultCommanderBackOffset = d.DefaultCommanderBackOffset;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.ShieldWallCommanderBackOffset)))
+                {
+                    parsed.ShieldWallCommanderBackOffset = d.ShieldWallCommanderBackOffset;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.ArcherCommanderBackOffset)))
+                {
+                    parsed.ArcherCommanderBackOffset = d.ArcherCommanderBackOffset;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CavalryCommanderBackOffset)))
+                {
+                    parsed.CavalryCommanderBackOffset = d.CavalryCommanderBackOffset;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.SkirmisherCommanderBackOffset)))
+                {
+                    parsed.SkirmisherCommanderBackOffset = d.SkirmisherCommanderBackOffset;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.AnchorAllowedRadius)))
+                {
+                    parsed.AnchorAllowedRadius = d.AnchorAllowedRadius;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableCommanderAnchorDebug)))
+                {
+                    parsed.EnableCommanderAnchorDebug = d.EnableCommanderAnchorDebug;
+                }
+            }
+            catch
+            {
+                // Ignore merge failures.
+            }
         }
 
         private static string ResolveConfigPath()

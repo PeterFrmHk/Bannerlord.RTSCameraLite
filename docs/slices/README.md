@@ -28,6 +28,8 @@ Some slices touch fragile engine surfaces. See **`docs/slice-hard-gates.md`** be
 | 4 | [`slice-4-internal-camera-pose-movement.md`](slice-4-internal-camera-pose-movement.md) — internal pose + input snapshot; manual checklist [`manual-test-checklist-slice-4.md`](../tests/manual-test-checklist-slice-4.md) |
 | 5 | [`slice-5-real-camera-bridge.md`](slice-5-real-camera-bridge.md) — typed `CameraBridge` + restore; manual checklist [`manual-test-checklist-slice-5.md`](../tests/manual-test-checklist-slice-5.md) |
 | 7 | [`slice-7-backspace-conflict-input-ownership.md`](slice-7-backspace-conflict-input-ownership.md) — Backspace policy + ownership state; manual checklist [`manual-test-checklist-slice-7.md`](../tests/manual-test-checklist-slice-7.md) |
+| 8 | [`slice-8-commander-presence-model.md`](slice-8-commander-presence-model.md) — commander presence detection; `CommanderAssignmentService` |
+| 9 | [`slice-9-commander-anchor-behind-formation.md`](slice-9-commander-anchor-behind-formation.md) — anchor behind formation (compute only); manual checklist [`manual-test-checklist-slice-9.md`](../tests/manual-test-checklist-slice-9.md) |
 
 ## Slice audit index (repository root)
 
@@ -41,6 +43,7 @@ Audit files live under `docs/` (historical layout):
 | 4 | § Audit in `docs/slices/slice-4-internal-camera-pose-movement.md` |
 | 5 | `docs/slice-5-audit.md` |
 | 7 | § Audit in `docs/slices/slice-7-backspace-conflict-input-ownership.md` |
+| 9 | § Audit in `docs/slices/slice-9-commander-anchor-behind-formation.md` |
 | 6 | `docs/slice-6-audit.md` |
 | 7 | `docs/slice-7-audit.md` |
 | 8 | `docs/slice-8-audit.md` |

@@ -47,7 +47,14 @@ namespace Bannerlord.RTSCameraLite.Config
                 AllowSergeantFallback = false,
                 AllowHighestTierFallback = false,
                 NoCommanderAllowsBasicMobOrders = true,
-                MinimumCommandAuthorityScore = 0.25f
+                MinimumCommandAuthorityScore = 0.25f,
+                DefaultCommanderBackOffset = 6.0f,
+                ShieldWallCommanderBackOffset = 8.0f,
+                ArcherCommanderBackOffset = 7.0f,
+                CavalryCommanderBackOffset = 10.0f,
+                SkirmisherCommanderBackOffset = 9.0f,
+                AnchorAllowedRadius = 4.0f,
+                EnableCommanderAnchorDebug = true
             };
         }
 

@@ -33,5 +33,13 @@
   "AllowSergeantFallback": false,
   "AllowHighestTierFallback": false,
   "NoCommanderAllowsBasicMobOrders": true,
-  "MinimumCommandAuthorityScore": 0.25
+  "MinimumCommandAuthorityScore": 0.25,
+
+  "DefaultCommanderBackOffset": 6.0,
+  "ShieldWallCommanderBackOffset": 8.0,
+  "ArcherCommanderBackOffset": 7.0,
+  "CavalryCommanderBackOffset": 10.0,
+  "SkirmisherCommanderBackOffset": 9.0,
+  "AnchorAllowedRadius": 4.0,
+  "EnableCommanderAnchorDebug": true
 }

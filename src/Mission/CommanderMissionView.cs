@@ -10,7 +10,7 @@ using TaleWorlds.MountAndBlade.View.MissionViews;
 namespace Bannerlord.RTSCameraLite.Mission
 {
     /// <summary>
-    /// Mission shell: commander mode, internal RTS camera pose, <see cref="CameraBridge"/> hand-off, input ownership / Backspace guard, commander presence scan (Slice 8).
+    /// Mission shell: commander mode, camera pose, input guards, commander presence scan (Slice 8), commander anchor compute (Slice 9).
     /// </summary>
     public sealed class CommanderMissionView : MissionView
     {
@@ -31,6 +31,10 @@ namespace Bannerlord.RTSCameraLite.Mission
         private bool _lifecycleCleanupDone;
         private bool _loggedFirstInternalPose;
         private bool _loggedCameraBridgeNotAppliedWarning;
+        private CommanderAnchorResolver _anchorResolver;
+        private CommanderAnchorSettings _anchorSettings;
+        private float _anchorScanAccum;
+        private const float CommanderAnchorScanIntervalSeconds = 2f;
 
         public CommanderModeState CommanderModeState => _commanderModeState;
 
@@ -68,6 +72,9 @@ namespace Bannerlord.RTSCameraLite.Mission
                 $"{ModConstants.ModuleId}: commander config — loaded={loadResult.Loaded}, usedDefaults={loadResult.UsedDefaults}, createdFile={loadResult.CreatedDefaultFile}: {loadResult.Message}");
             _commanderAssignmentService = new CommanderAssignmentService(_formationDataAdapter);
             _commanderAssignmentService.ApplyDetectionSettings(CommanderDetectionSettings.FromConfig(_commanderConfig));
+            _anchorResolver = new CommanderAnchorResolver(_formationDataAdapter);
+            _anchorSettings = CommanderAnchorSettings.FromConfig(_commanderConfig);
+            _anchorScanAccum = CommanderAnchorScanIntervalSeconds;
             _commanderPresenceScanTimer = CommanderPresenceScanIntervalSeconds;
             LogShellActiveOnce();
             LogEnabledTransition();
@@ -115,6 +122,10 @@ namespace Bannerlord.RTSCameraLite.Mission
             _backspaceConflictGuard.Tick();
             _nativeInputGuard.Tick();
             TickCommanderCameraAndBridge(dt);
+            if (_commanderModeState.IsEnabled)
+            {
+                MaybeScanCommanderAnchors(dt);
+            }
         }
 
         public override void OnRemoveBehavior()
@@ -164,6 +175,71 @@ namespace Bannerlord.RTSCameraLite.Mission
             }
 
             ModLogger.LogDebug($"{ModConstants.ModuleId}: Commander scan: {commanded}/{total} formations commanded");
+        }
+
+        private void MaybeScanCommanderAnchors(float dt)
+        {
+            if (_anchorResolver == null || _commanderAssignmentService == null || Mission == null)
+            {
+                return;
+            }
+
+            _anchorScanAccum += dt;
+            if (_anchorScanAccum < CommanderAnchorScanIntervalSeconds)
+            {
+                return;
+            }
+
+            _anchorScanAccum = 0f;
+
+            Team playerTeam = Mission.PlayerTeam;
+            if (playerTeam == null)
+            {
+                return;
+            }
+
+            int inside = 0;
+            int outside = 0;
+            int noAnchor = 0;
+
+            try
+            {
+                foreach (Formation formation in playerTeam.FormationsIncludingEmpty)
+                {
+                    if (formation == null || formation.CountOfUnits <= 0)
+                    {
+                        continue;
+                    }
+
+                    CommanderPresenceResult presence = _commanderAssignmentService.DetectCommander(Mission, formation);
+                    CommanderAnchorState anchor = _anchorResolver.ResolveAnchor(Mission, formation, presence, _anchorSettings);
+                    if (!anchor.HasAnchor)
+                    {
+                        noAnchor++;
+                        continue;
+                    }
+
+                    if (anchor.CommanderInsideAnchorZone)
+                    {
+                        inside++;
+                    }
+                    else
+                    {
+                        outside++;
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: commander anchor scan skipped ({ex.Message})");
+                return;
+            }
+
+            if (_commanderConfig.EnableCommanderAnchorDebug)
+            {
+                ModLogger.LogDebug(
+                    $"{ModConstants.ModuleId}: Commander anchors: {inside} inside, {outside} out of position, {noAnchor} without anchor.");
+            }
         }
 
         private void SyncCommanderInputGuardsWithCommanderMode()
@@ -266,6 +342,7 @@ namespace Bannerlord.RTSCameraLite.Mission
             _loggedFirstInternalPose = false;
             _loggedCameraBridgeNotAppliedWarning = false;
             _commanderPresenceScanTimer = 0f;
+            _anchorScanAccum = 0f;
             _cameraController.Reset();
         }
 

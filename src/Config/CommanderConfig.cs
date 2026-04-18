@@ -77,5 +77,21 @@ namespace Bannerlord.RTSCameraLite.Config
         public bool NoCommanderAllowsBasicMobOrders { get; set; }
 
         public float MinimumCommandAuthorityScore { get; set; }
+
+        // Slice 9 — commander anchor (compute only; no movement).
+
+        public float DefaultCommanderBackOffset { get; set; }
+
+        public float ShieldWallCommanderBackOffset { get; set; }
+
+        public float ArcherCommanderBackOffset { get; set; }
+
+        public float CavalryCommanderBackOffset { get; set; }
+
+        public float SkirmisherCommanderBackOffset { get; set; }
+
+        public float AnchorAllowedRadius { get; set; }
+
+        public bool EnableCommanderAnchorDebug { get; set; }
     }
 }
