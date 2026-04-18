@@ -22,6 +22,8 @@ namespace Bannerlord.RTSCameraLite.Input
         private InputKey _zoomInKey = InputKey.R;
         private InputKey _zoomOutKey = InputKey.F;
 
+        private InputKey _diagnosticsToggleKey = InputKey.F9;
+
         public InputKey ModeActivationKey => _modeActivationKey;
 
         public InputKey DebugFallbackToggleKey => _debugFallbackToggleKey;
@@ -66,6 +68,7 @@ namespace Bannerlord.RTSCameraLite.Input
             _fastMoveKey = ParseBinding(config?.FastMoveKey, d.FastMoveKey, InputKey.LeftShift);
             _zoomInKey = ParseBinding(config?.ZoomInKey, d.ZoomInKey, InputKey.R);
             _zoomOutKey = ParseBinding(config?.ZoomOutKey, d.ZoomOutKey, InputKey.F);
+            _diagnosticsToggleKey = ParseBinding(config?.DiagnosticsToggleKey, d.DiagnosticsToggleKey, InputKey.F9);
 
             if (_debugFallbackEnabled && _debugFallbackToggleKey == _modeActivationKey)
             {
@@ -121,6 +124,24 @@ namespace Bannerlord.RTSCameraLite.Input
             try
             {
                 return input.IsKeyReleased(_debugFallbackToggleKey);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Slice 20 — portfolio diagnostics text toggle (configurable, default F9).</summary>
+        public bool TryConsumeDiagnosticsToggle(IInputContext input)
+        {
+            if (input == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                return input.IsKeyReleased(_diagnosticsToggleKey);
             }
             catch
             {

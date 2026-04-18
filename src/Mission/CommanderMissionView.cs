@@ -635,21 +635,6 @@ namespace Bannerlord.RTSCameraLite.Mission
             }
         }
 
-        /// <summary>
-        /// Slice 19 — marker lifetimes + throttled ground target sampling (text/visual fallback inside service).
-        /// </summary>
-        private void MaybeDiagnostics(float dt)
-        {
-            try
-            {
-                _commanderDiagnosticsService?.Tick(dt);
-            }
-            catch (Exception ex)
-            {
-                ModLogger.LogDebug($"{ModConstants.ModuleId}: diagnostics tick skipped ({ex.Message})");
-            }
-        }
-
         private void MaybeTickCommandMarkers(float dt)
         {
             try

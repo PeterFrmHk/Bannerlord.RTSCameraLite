@@ -119,11 +119,6 @@
     <Compile Include="src\UX\MarkerLifetime.cs" />
     <Compile Include="src\UX\MarkerRenderResult.cs" />
     <Compile Include="src\UX\CommandMarkerService.cs" />
-    <Compile Include="src\Diagnostics\DiagnosticsSettings.cs" />
-    <Compile Include="src\Diagnostics\DiagnosticsThrottle.cs" />
-    <Compile Include="src\Diagnostics\FormationDiagnosticsSnapshot.cs" />
-    <Compile Include="src\Diagnostics\FormationDiagnosticsFormatter.cs" />
-    <Compile Include="src\Diagnostics\CommanderDiagnosticsService.cs" />
   </ItemGroup>
 
   <ItemGroup>
