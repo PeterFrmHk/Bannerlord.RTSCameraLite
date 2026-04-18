@@ -121,6 +121,7 @@ namespace Bannerlord.RTSCameraLite.Config
                 ApplyOmittedSlice16NativeCavalrySequenceDefaults(json, parsed);
                 ApplyOmittedSlice19CommandMarkerDefaults(json, parsed);
                 ApplyOmittedSlice20DiagnosticsDefaults(json, parsed);
+                ApplyOmittedSlice24PerformanceBudgetDefaults(json, parsed);
 
                 CommanderConfig defaults = CommanderConfigDefaults.CreateDefault();
                 CommanderConfigValidationResult validation = FinalizeLoadedConfig(configPath, json, parsed, defaults);
@@ -681,6 +682,89 @@ namespace Bannerlord.RTSCameraLite.Config
                 if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.IncludeNativeOrderStatus)))
                 {
                     parsed.IncludeNativeOrderStatus = d.IncludeNativeOrderStatus;
+                }
+            }
+            catch
+            {
+                // Ignore merge failures.
+            }
+        }
+
+        private static void ApplyOmittedSlice24PerformanceBudgetDefaults(string json, CommanderConfig parsed)
+        {
+            if (parsed == null || string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            try
+            {
+                using JsonDocument doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                JsonElement root = doc.RootElement;
+                CommanderConfig d = CommanderConfigDefaults.CreateDefault();
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnablePerformanceDiagnostics)))
+                {
+                    parsed.EnablePerformanceDiagnostics = d.EnablePerformanceDiagnostics;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.WarnOnOverBudget)))
+                {
+                    parsed.WarnOnOverBudget = d.WarnOnOverBudget;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.PerformanceWarningThrottleSeconds)))
+                {
+                    parsed.PerformanceWarningThrottleSeconds = d.PerformanceWarningThrottleSeconds;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.TargetingIntervalSeconds)))
+                {
+                    parsed.TargetingIntervalSeconds = d.TargetingIntervalSeconds;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CommanderScanIntervalSeconds)))
+                {
+                    parsed.CommanderScanIntervalSeconds = d.CommanderScanIntervalSeconds;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EligibilityScanIntervalSeconds)))
+                {
+                    parsed.EligibilityScanIntervalSeconds = d.EligibilityScanIntervalSeconds;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.RallyAbsorptionIntervalSeconds)))
+                {
+                    parsed.RallyAbsorptionIntervalSeconds = d.RallyAbsorptionIntervalSeconds;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CavalrySequenceIntervalSeconds)))
+                {
+                    parsed.CavalrySequenceIntervalSeconds = d.CavalrySequenceIntervalSeconds;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.FeedbackTickIntervalSeconds)))
+                {
+                    parsed.FeedbackTickIntervalSeconds = d.FeedbackTickIntervalSeconds;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.MarkerTickIntervalSeconds)))
+                {
+                    parsed.MarkerTickIntervalSeconds = d.MarkerTickIntervalSeconds;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.DiagnosticsTickIntervalSeconds)))
+                {
+                    parsed.DiagnosticsTickIntervalSeconds = d.DiagnosticsTickIntervalSeconds;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.ConfigReloadCheckIntervalSeconds)))
+                {
+                    parsed.ConfigReloadCheckIntervalSeconds = d.ConfigReloadCheckIntervalSeconds;
                 }
             }
             catch

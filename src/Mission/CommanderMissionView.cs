@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Bannerlord.RTSCameraLite.Adapters;
 using TaleWorlds.Core;
 using Bannerlord.RTSCameraLite.Camera;
@@ -13,6 +14,7 @@ using Bannerlord.RTSCameraLite.Equipment;
 using Bannerlord.RTSCameraLite.Input;
 using Bannerlord.RTSCameraLite.Tactical;
 using Bannerlord.RTSCameraLite.UX;
+using Bannerlord.RTSCameraLite.Performance;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
@@ -35,9 +37,6 @@ namespace Bannerlord.RTSCameraLite.Mission
         private CommanderAssignmentService _commanderAssignmentService;
         private FormationEligibilityRules _formationEligibilityRules;
         private DoctrineScoreCalculator _doctrineScoreCalculator;
-        private float _doctrineScanAccum;
-        private float _commanderPresenceScanTimer;
-        private const float CommanderPresenceScanIntervalSeconds = 2.5f;
         private CommanderConfig _commanderConfig = CommanderConfigDefaults.CreateDefault();
         private bool _loggedShellActive;
         private bool _lastLoggedEnabled;
@@ -47,24 +46,18 @@ namespace Bannerlord.RTSCameraLite.Mission
         private bool _loggedCameraBridgeNotAppliedWarning;
         private CommanderAnchorResolver _anchorResolver;
         private CommanderAnchorSettings _anchorSettings;
-        private float _anchorScanAccum;
-        private const float CommanderAnchorScanIntervalSeconds = 2f;
         private CommanderRallyPlanner _commanderRallyPlanner;
         private TroopAbsorptionController _troopAbsorptionController;
         private RowRankSlotAssigner _rowRankSlotAssigner;
         private CommanderRallySettings _commanderRallySettings;
-        private float _rallyScanAccum;
         private float _absorptionMissionTime;
         private readonly Dictionary<Formation, CavalryChargeSequenceState> _cavalryDoctrineByFormation =
             new Dictionary<Formation, CavalryChargeSequenceState>();
         private readonly Dictionary<Formation, float> _cavalryWideLayoutLogTime = new Dictionary<Formation, float>();
-        private float _cavalryDoctrineAccum;
         private CommandRouter _commandRouter;
         private NativeOrderPrimitiveExecutor _nativeOrderPrimitives;
         private readonly CavalrySequenceRegistry _cavalrySequenceRegistry = new CavalrySequenceRegistry();
         private CavalryNativeChargeOrchestrator _cavalryNativeChargeOrchestrator;
-        private float _cavalryNativeSequenceAccum;
-        private const float CavalryNativeSequenceTickIntervalSeconds = 0.5f;
         private readonly Dictionary<Formation, NativeCavalrySequenceLogState> _cavalryNativeSeqTransitionLog =
             new Dictionary<Formation, NativeCavalrySequenceLogState>();
         private float _secondsSinceCommandValidationLog;
@@ -73,7 +66,11 @@ namespace Bannerlord.RTSCameraLite.Mission
         private TacticalFeedbackService _tacticalFeedback;
         private CommandMarkerService _commandMarkerService;
         private GroundTargetResolver _groundTargetResolver;
-        private float _groundTargetMarkerAccum;
+        private CommanderPerformanceBudget _perfBudget;
+        private ThrottledUpdateGate _perfGate;
+        private PerformanceDiagnosticsService _perfDiagnostics;
+        private float _missionPerfClock;
+        private float _markerTickAccumSeconds;
 
         private sealed class NativeCavalrySequenceLogState
         {
@@ -126,16 +123,15 @@ namespace Bannerlord.RTSCameraLite.Mission
             _commanderAssignmentService.ApplyDetectionSettings(CommanderDetectionSettings.FromConfig(_commanderConfig));
             _formationEligibilityRules = new FormationEligibilityRules(FormationEligibilitySettings.FromConfig(_commanderConfig));
             _doctrineScoreCalculator = new DoctrineScoreCalculator(_formationDataAdapter);
-            _doctrineScanAccum = System.Math.Max(0.1f, _commanderConfig.DoctrineScanIntervalSeconds);
             _anchorResolver = new CommanderAnchorResolver(_formationDataAdapter);
             _anchorSettings = CommanderAnchorSettings.FromConfig(_commanderConfig);
-            _anchorScanAccum = CommanderAnchorScanIntervalSeconds;
             _commanderRallyPlanner = new CommanderRallyPlanner(_formationDataAdapter);
             _troopAbsorptionController = new TroopAbsorptionController();
             _rowRankSlotAssigner = new RowRankSlotAssigner(_formationDataAdapter);
             _commanderRallySettings = CommanderRallySettings.FromConfig(_commanderConfig);
-            _rallyScanAccum = System.Math.Max(0.1f, _commanderRallySettings.RallyScanIntervalSeconds);
-            _commanderPresenceScanTimer = CommanderPresenceScanIntervalSeconds;
+            _perfBudget = CommanderPerformanceBudget.FromCommanderConfig(_commanderConfig);
+            _perfGate = new ThrottledUpdateGate(_perfBudget);
+            _perfDiagnostics = new PerformanceDiagnosticsService(_commanderConfig, _perfGate);
             _nativeOrderPrimitives = new NativeOrderPrimitiveExecutor(_commanderConfig);
             _commandRouter = new CommandRouter(_commanderConfig, _nativeOrderPrimitives);
             _cavalryNativeChargeOrchestrator = new CavalryNativeChargeOrchestrator(
@@ -144,7 +140,6 @@ namespace Bannerlord.RTSCameraLite.Mission
                 _nativeOrderPrimitives,
                 _commanderAssignmentService,
                 _cavalrySequenceRegistry);
-            _cavalryNativeSequenceAccum = CavalryNativeSequenceTickIntervalSeconds;
             _secondsSinceCommandValidationLog = 0f;
             _feedbackThrottle = new FeedbackThrottle();
             _tacticalFeedback = new TacticalFeedbackService(_feedbackThrottle);
@@ -153,7 +148,8 @@ namespace Bannerlord.RTSCameraLite.Mission
                 _tacticalFeedback,
                 () => Mission);
             _groundTargetResolver = new GroundTargetResolver();
-            _groundTargetMarkerAccum = 0f;
+            _missionPerfClock = 0f;
+            _markerTickAccumSeconds = 0f;
             LogShellActiveOnce();
             LogEnabledTransition();
         }
@@ -174,10 +170,20 @@ namespace Bannerlord.RTSCameraLite.Mission
             }
 
             _absorptionMissionTime += dt;
+            _missionPerfClock += dt;
+            _perfDiagnostics?.TryWarnOverBudget(dt);
+            if (_perfGate != null
+                && _perfDiagnostics != null
+                && _commanderConfig.EnablePerformanceDiagnostics
+                && _perfGate.ShouldRun(UpdateBudgetCategory.FeedbackTick, _missionPerfClock))
+            {
+                _perfGate.MarkRun(UpdateBudgetCategory.FeedbackTick, _missionPerfClock, -1f);
+                _perfDiagnostics.Tick(_missionPerfClock, dt);
+            }
+
+            MaybeRunDoctrineAndCavalryScans(dt);
             MaybeScanFriendlyFormationCommanders(dt);
-            MaybeScanDoctrineProfiles(dt);
             MaybeScanRallyAbsorption(dt);
-            MaybeEvaluateCavalryDoctrine(dt);
             MaybeTickNativeCavalryChargeSequences(dt);
             MaybeTickCommandMarkers(dt);
             MaybeDiagnostics(dt);
@@ -209,7 +215,6 @@ namespace Bannerlord.RTSCameraLite.Mission
             TickCommanderCameraAndBridge(dt);
             if (_commanderModeState.IsEnabled)
             {
-                MaybeScanCommanderAnchors(dt);
                 MaybeDebugCommandRouterKeys(dt);
             }
         }
@@ -220,20 +225,51 @@ namespace Bannerlord.RTSCameraLite.Mission
             base.OnRemoveBehavior();
         }
 
+        private void MaybeRunDoctrineAndCavalryScans(float dt)
+        {
+            if (_perfGate == null || _doctrineScoreCalculator == null || Mission?.PlayerTeam == null)
+            {
+                return;
+            }
+
+            if (!_perfGate.ShouldRun(UpdateBudgetCategory.DoctrineScan, _missionPerfClock))
+            {
+                return;
+            }
+
+            Stopwatch sw = Stopwatch.StartNew();
+            try
+            {
+                MaybeScanDoctrineProfiles(dt);
+                MaybeEvaluateCavalryDoctrine(dt);
+            }
+            finally
+            {
+                _perfGate.MarkRun(UpdateBudgetCategory.DoctrineScan, _missionPerfClock, (float)sw.Elapsed.TotalSeconds);
+            }
+        }
+
         private void MaybeScanFriendlyFormationCommanders(float dt)
         {
-            if (_commanderAssignmentService == null || Mission?.PlayerTeam == null)
+            if (_perfGate == null || _commanderAssignmentService == null || Mission?.PlayerTeam == null)
             {
                 return;
             }
 
-            _commanderPresenceScanTimer += dt;
-            if (_commanderPresenceScanTimer < CommanderPresenceScanIntervalSeconds)
+            if (!_perfGate.ShouldRun(UpdateBudgetCategory.CommanderScan, _missionPerfClock))
             {
                 return;
             }
 
-            _commanderPresenceScanTimer = 0f;
+            Stopwatch sw = Stopwatch.StartNew();
+            bool runEligibilityDebug = _commanderConfig.EnableEligibilityDebug
+                                       && _formationEligibilityRules != null
+                                       && _doctrineScoreCalculator != null
+                                       && _perfGate.ShouldRun(UpdateBudgetCategory.EligibilityScan, _missionPerfClock);
+            if (runEligibilityDebug)
+            {
+                _perfGate.MarkRun(UpdateBudgetCategory.EligibilityScan, _missionPerfClock, -1f);
+            }
 
             int total = 0;
             int commanded = 0;
@@ -253,7 +289,7 @@ namespace Bannerlord.RTSCameraLite.Mission
                         commanded++;
                     }
 
-                    if (_commanderConfig.EnableEligibilityDebug && _formationEligibilityRules != null && _doctrineScoreCalculator != null)
+                    if (runEligibilityDebug)
                     {
                         DoctrineScoreResult doctrineRes = _doctrineScoreCalculator.Compute(
                             Mission,
@@ -271,11 +307,19 @@ namespace Bannerlord.RTSCameraLite.Mission
                             $"{ModConstants.ModuleId}: Eligibility: {label} allowed {FormatEligibilityTypes(elig.AllowedFormationTypes)}; denied {FormatEligibilityTypes(elig.DeniedFormationTypes)}.");
                     }
                 }
+
+                if (_commanderModeState.IsEnabled)
+                {
+                    RunCommanderAnchorScanBody();
+                }
             }
             catch (System.Exception ex)
             {
                 ModLogger.LogDebug($"{ModConstants.ModuleId}: Commander scan skipped ({ex.Message})");
-                return;
+            }
+            finally
+            {
+                _perfGate.MarkRun(UpdateBudgetCategory.CommanderScan, _missionPerfClock, (float)sw.Elapsed.TotalSeconds);
             }
 
             ModLogger.LogDebug($"{ModConstants.ModuleId}: Commander scan: {commanded}/{total} formations commanded");
@@ -286,7 +330,8 @@ namespace Bannerlord.RTSCameraLite.Mission
         /// </summary>
         private void MaybeScanRallyAbsorption(float dt)
         {
-            if (_commanderRallyPlanner == null
+            if (_perfGate == null
+                || _commanderRallyPlanner == null
                 || _troopAbsorptionController == null
                 || _rowRankSlotAssigner == null
                 || _commanderRallySettings == null
@@ -298,14 +343,12 @@ namespace Bannerlord.RTSCameraLite.Mission
                 return;
             }
 
-            float interval = System.Math.Max(0.5f, _commanderRallySettings.RallyScanIntervalSeconds);
-            _rallyScanAccum += dt;
-            if (_rallyScanAccum < interval)
+            if (!_perfGate.ShouldRun(UpdateBudgetCategory.RallyAbsorptionScan, _missionPerfClock))
             {
                 return;
             }
 
-            _rallyScanAccum = 0f;
+            Stopwatch sw = Stopwatch.StartNew();
             DoctrineScoreSettings doctrineSettings = DoctrineScoreSettings.FromConfig(_commanderConfig);
 
             try
@@ -380,6 +423,10 @@ namespace Bannerlord.RTSCameraLite.Mission
             {
                 ModLogger.LogDebug($"{ModConstants.ModuleId}: Rally absorption scan skipped ({ex.Message})");
             }
+            finally
+            {
+                _perfGate?.MarkRun(UpdateBudgetCategory.RallyAbsorptionScan, _missionPerfClock, (float)sw.Elapsed.TotalSeconds);
+            }
         }
 
         /// <summary>
@@ -393,19 +440,13 @@ namespace Bannerlord.RTSCameraLite.Mission
                 || _commanderRallyPlanner == null
                 || _commanderRallySettings == null
                 || _anchorResolver == null
-                || Mission?.PlayerTeam == null)
+                || Mission?.PlayerTeam == null
+                || _perfBudget == null)
             {
                 return;
             }
 
-            float interval = System.Math.Max(0.5f, _commanderConfig.DoctrineScanIntervalSeconds);
-            _cavalryDoctrineAccum += dt;
-            if (_cavalryDoctrineAccum < interval)
-            {
-                return;
-            }
-
-            _cavalryDoctrineAccum = 0f;
+            float interval = System.Math.Max(0.1f, _perfBudget.DoctrineScanIntervalSeconds);
             DoctrineScoreSettings doctrineSettings = DoctrineScoreSettings.FromConfig(_commanderConfig);
             var toRemove = new List<Formation>();
 
@@ -539,19 +580,20 @@ namespace Bannerlord.RTSCameraLite.Mission
         {
             if (!_commanderConfig.EnableNativeCavalryChargeSequence
                 || _cavalryNativeChargeOrchestrator == null
-                || Mission?.PlayerTeam == null)
+                || Mission?.PlayerTeam == null
+                || _perfGate == null
+                || _perfBudget == null)
             {
                 return;
             }
 
-            _cavalryNativeSequenceAccum += dt;
-            if (_cavalryNativeSequenceAccum < CavalryNativeSequenceTickIntervalSeconds)
+            if (!_perfGate.ShouldRun(UpdateBudgetCategory.CavalrySequenceTick, _missionPerfClock))
             {
                 return;
             }
 
-            _cavalryNativeSequenceAccum = 0f;
-
+            Stopwatch sw = Stopwatch.StartNew();
+            float tickSeconds = System.Math.Max(0.01f, _perfBudget.CavalrySequenceIntervalSeconds);
             try
             {
                 _cavalrySequenceRegistry.CleanupInvalidSequences(Mission);
@@ -572,7 +614,7 @@ namespace Bannerlord.RTSCameraLite.Mission
 
                         CavalrySequenceTickResult tick = _cavalryNativeChargeOrchestrator.TickSequence(
                             state,
-                            CavalryNativeSequenceTickIntervalSeconds);
+                            tickSeconds);
 
                         if (_commanderConfig.EnableCavalrySequenceDebug)
                         {
@@ -633,40 +675,61 @@ namespace Bannerlord.RTSCameraLite.Mission
             {
                 ModLogger.LogDebug($"{ModConstants.ModuleId}: Native cavalry sequence tick skipped ({ex.Message})");
             }
+            finally
+            {
+                _perfGate.MarkRun(UpdateBudgetCategory.CavalrySequenceTick, _missionPerfClock, (float)sw.Elapsed.TotalSeconds);
+            }
         }
 
         private void MaybeTickCommandMarkers(float dt)
         {
             try
             {
-                _commandMarkerService?.Tick(dt);
+                if (_commandMarkerService != null && _perfGate != null)
+                {
+                    _markerTickAccumSeconds += dt;
+                    if (_perfGate.ShouldRun(UpdateBudgetCategory.MarkerTick, _missionPerfClock))
+                    {
+                        _perfGate.MarkRun(UpdateBudgetCategory.MarkerTick, _missionPerfClock, -1f);
+                        _commandMarkerService.Tick(_markerTickAccumSeconds);
+                        _markerTickAccumSeconds = 0f;
+                    }
+                }
+
                 if (_commandMarkerService == null
                     || !_commanderConfig.EnableCommandMarkers
                     || Mission == null
                     || Mission.MissionEnded
                     || !_commanderModeState.IsEnabled
-                    || !_cameraController.HasPose)
+                    || !_cameraController.HasPose
+                    || _perfGate == null
+                    || _groundTargetResolver == null)
                 {
                     return;
                 }
 
-                CommandMarkerSettings markerSettings = CommandMarkerSettings.FromConfig(_commanderConfig);
-                _groundTargetMarkerAccum += dt;
-                if (_groundTargetMarkerAccum < markerSettings.MarkerRefreshThrottleSeconds)
+                if (!_perfGate.ShouldRun(UpdateBudgetCategory.Targeting, _missionPerfClock))
                 {
                     return;
                 }
 
-                _groundTargetMarkerAccum = 0f;
-                CommanderCameraPose pose = _cameraController.GetPose();
-                GroundTargetResult ground = _groundTargetResolver.TryResolveFromCamera(
-                    Mission,
-                    pose.Position,
-                    pose.Yaw,
-                    pose.Pitch);
-                if (ground.Success)
+                Stopwatch sw = Stopwatch.StartNew();
+                try
                 {
-                    _commandMarkerService.AddGroundTargetMarker(ground);
+                    CommanderCameraPose pose = _cameraController.GetPose();
+                    GroundTargetResult ground = _groundTargetResolver.TryResolveFromCamera(
+                        Mission,
+                        pose.Position,
+                        pose.Yaw,
+                        pose.Pitch);
+                    if (ground.Success)
+                    {
+                        _commandMarkerService.AddGroundTargetMarker(ground);
+                    }
+                }
+                finally
+                {
+                    _perfGate.MarkRun(UpdateBudgetCategory.Targeting, _missionPerfClock, (float)sw.Elapsed.TotalSeconds);
                 }
             }
             catch (Exception ex)
@@ -705,15 +768,6 @@ namespace Bannerlord.RTSCameraLite.Mission
             {
                 return;
             }
-
-            float interval = System.Math.Max(0.1f, _commanderConfig.DoctrineScanIntervalSeconds);
-            _doctrineScanAccum += dt;
-            if (_doctrineScanAccum < interval)
-            {
-                return;
-            }
-
-            _doctrineScanAccum = 0f;
 
             if (!_commanderConfig.EnableDoctrineDebug)
             {
@@ -784,20 +838,12 @@ namespace Bannerlord.RTSCameraLite.Mission
             return string.Join(", ", types);
         }
 
-        private void MaybeScanCommanderAnchors(float dt)
+        private void RunCommanderAnchorScanBody()
         {
             if (_anchorResolver == null || _commanderAssignmentService == null || Mission == null)
             {
                 return;
             }
-
-            _anchorScanAccum += dt;
-            if (_anchorScanAccum < CommanderAnchorScanIntervalSeconds)
-            {
-                return;
-            }
-
-            _anchorScanAccum = 0f;
 
             Team playerTeam = Mission.PlayerTeam;
             if (playerTeam == null)
@@ -1257,6 +1303,12 @@ namespace Bannerlord.RTSCameraLite.Mission
                 return;
             }
 
+            if (_perfGate == null || !_perfGate.ShouldRun(UpdateBudgetCategory.DiagnosticsTick, _missionPerfClock))
+            {
+                return;
+            }
+
+            Stopwatch diagSw = Stopwatch.StartNew();
             try
             {
                 var snaps = new List<FormationDiagnosticsSnapshot>();
@@ -1283,12 +1335,25 @@ namespace Bannerlord.RTSCameraLite.Mission
                     return;
                 }
 
+                if (_commanderConfig.EnablePerformanceDiagnostics && _perfDiagnostics != null)
+                {
+                    string perf = _perfDiagnostics.BuildScanRateSummary();
+                    if (!string.IsNullOrEmpty(perf))
+                    {
+                        block = block + "\n— perf — " + perf;
+                    }
+                }
+
                 double cd = System.Math.Max(0.45, ds.DiagnosticsRefreshIntervalSeconds * 0.92);
                 _tacticalFeedback.ShowDiagnosticsSummary(block, cd, false);
             }
             catch (Exception ex)
             {
                 ModLogger.LogDebug($"{ModConstants.ModuleId}: diagnostics skipped ({ex.Message})");
+            }
+            finally
+            {
+                _perfGate?.MarkRun(UpdateBudgetCategory.DiagnosticsTick, _missionPerfClock, (float)diagSw.Elapsed.TotalSeconds);
             }
         }
 
@@ -1406,12 +1471,11 @@ namespace Bannerlord.RTSCameraLite.Mission
             _hasLoggedEnabledState = false;
             _loggedFirstInternalPose = false;
             _loggedCameraBridgeNotAppliedWarning = false;
-            _commanderPresenceScanTimer = 0f;
-            _anchorScanAccum = 0f;
-            _doctrineScanAccum = 0f;
-            _rallyScanAccum = 0f;
             _absorptionMissionTime = 0f;
-            _cavalryDoctrineAccum = 0f;
+            _missionPerfClock = 0f;
+            _markerTickAccumSeconds = 0f;
+            _perfGate?.ResetAll();
+            _perfDiagnostics?.Reset();
             _cavalryDoctrineByFormation.Clear();
             _cavalryWideLayoutLogTime.Clear();
             _cavalrySequenceRegistry.Clear();

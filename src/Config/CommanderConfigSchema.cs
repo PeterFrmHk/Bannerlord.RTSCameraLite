@@ -176,11 +176,26 @@ namespace Bannerlord.RTSCameraLite.Config
                     nameof(CommanderConfig.ShowDiagnosticsInCommanderModeOnly),
                     nameof(CommanderConfig.DiagnosticsToggleKey),
                     nameof(CommanderConfig.DiagnosticsRefreshIntervalSeconds),
+                    nameof(CommanderConfig.DiagnosticsTickIntervalSeconds),
                     nameof(CommanderConfig.IncludeDoctrineScores),
                     nameof(CommanderConfig.IncludeEligibility),
                     nameof(CommanderConfig.IncludeRallyAbsorption),
                     nameof(CommanderConfig.IncludeCavalrySequence),
                     nameof(CommanderConfig.IncludeNativeOrderStatus)
+                }),
+                ("Performance budget (Slice 24)", new[]
+                {
+                    nameof(CommanderConfig.EnablePerformanceDiagnostics),
+                    nameof(CommanderConfig.WarnOnOverBudget),
+                    nameof(CommanderConfig.PerformanceWarningThrottleSeconds),
+                    nameof(CommanderConfig.TargetingIntervalSeconds),
+                    nameof(CommanderConfig.CommanderScanIntervalSeconds),
+                    nameof(CommanderConfig.EligibilityScanIntervalSeconds),
+                    nameof(CommanderConfig.RallyAbsorptionIntervalSeconds),
+                    nameof(CommanderConfig.CavalrySequenceIntervalSeconds),
+                    nameof(CommanderConfig.FeedbackTickIntervalSeconds),
+                    nameof(CommanderConfig.MarkerTickIntervalSeconds),
+                    nameof(CommanderConfig.ConfigReloadCheckIntervalSeconds)
                 })
             };
 

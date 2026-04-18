@@ -278,5 +278,32 @@ namespace Bannerlord.RTSCameraLite.Config
 
         /// <summary>Minimum seconds between debug validation log lines (Slice 15).</summary>
         public float CommandValidationDebugLogIntervalSeconds { get; set; }
+
+        // Slice 24 — performance budget / scan throttling (no threading; cadence only).
+
+        public bool EnablePerformanceDiagnostics { get; set; }
+
+        public bool WarnOnOverBudget { get; set; }
+
+        public float PerformanceWarningThrottleSeconds { get; set; }
+
+        public float TargetingIntervalSeconds { get; set; }
+
+        public float CommanderScanIntervalSeconds { get; set; }
+
+        public float EligibilityScanIntervalSeconds { get; set; }
+
+        public float RallyAbsorptionIntervalSeconds { get; set; }
+
+        public float CavalrySequenceIntervalSeconds { get; set; }
+
+        public float FeedbackTickIntervalSeconds { get; set; }
+
+        public float MarkerTickIntervalSeconds { get; set; }
+
+        /// <summary>When 0, <see cref="DiagnosticsRefreshIntervalSeconds"/> is used for diagnostics tick gating.</summary>
+        public float DiagnosticsTickIntervalSeconds { get; set; }
+
+        public float ConfigReloadCheckIntervalSeconds { get; set; }
     }
 }

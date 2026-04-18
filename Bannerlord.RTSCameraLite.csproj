@@ -31,6 +31,11 @@
     <Compile Include="src\Diagnostics\FormationDiagnosticsFormatter.cs" />
     <Compile Include="src\Diagnostics\CommanderDiagnosticsService.cs" />
     <Compile Include="src\Mission\CommanderMissionModeGate.cs" />
+    <Compile Include="src\Performance\UpdateBudgetCategory.cs" />
+    <Compile Include="src\Performance\PerformanceBudgetSnapshot.cs" />
+    <Compile Include="src\Performance\CommanderPerformanceBudget.cs" />
+    <Compile Include="src\Performance\ThrottledUpdateGate.cs" />
+    <Compile Include="src\Performance\PerformanceDiagnosticsService.cs" />
     <Compile Include="src\Mission\CommanderMissionView.cs" />
     <Compile Include="src\Mission\CommanderModeState.cs" />
     <Compile Include="src\Input\CommanderInputReader.cs" />

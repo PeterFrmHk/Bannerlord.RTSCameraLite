@@ -131,7 +131,19 @@ namespace Bannerlord.RTSCameraLite.Config
                 IncludeRallyAbsorption = true,
                 IncludeCavalrySequence = true,
                 IncludeNativeOrderStatus = true,
-                CommandValidationDebugLogIntervalSeconds = 0.4f
+                CommandValidationDebugLogIntervalSeconds = 0.4f,
+                EnablePerformanceDiagnostics = false,
+                WarnOnOverBudget = false,
+                PerformanceWarningThrottleSeconds = 2.0f,
+                TargetingIntervalSeconds = 0.25f,
+                CommanderScanIntervalSeconds = 3.0f,
+                EligibilityScanIntervalSeconds = 3.0f,
+                RallyAbsorptionIntervalSeconds = 3.0f,
+                CavalrySequenceIntervalSeconds = 0.25f,
+                FeedbackTickIntervalSeconds = 0.1f,
+                MarkerTickIntervalSeconds = 0.1f,
+                DiagnosticsTickIntervalSeconds = 0f,
+                ConfigReloadCheckIntervalSeconds = 5.0f
             };
         }
 

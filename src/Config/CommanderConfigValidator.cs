@@ -52,6 +52,7 @@ namespace Bannerlord.RTSCameraLite.Config
             used |= SanitizeRallyAndAnchor(c, defaultsSafe, warnings);
             used |= SanitizeCavalryDoctrine(c, defaultsSafe, warnings);
             used |= SanitizeMarkersAndDiagnostics(c, defaultsSafe, warnings);
+            used |= SanitizePerformanceBudgetIntervals(c, defaultsSafe, warnings);
 
             ClampDefaultHeightBetweenMinMax(c, warnings, ref used);
 
@@ -301,6 +302,34 @@ namespace Bannerlord.RTSCameraLite.Config
             if (TryClampMin(nameof(CommanderConfig.DefaultMarkerLifetimeSeconds), c.DefaultMarkerLifetimeSeconds, MinMarkerLifetimeSeconds, d.DefaultMarkerLifetimeSeconds, warnings, out v)) { c.DefaultMarkerLifetimeSeconds = v; used = true; }
             if (TryClampMin(nameof(CommanderConfig.ChargeMarkerLifetimeSeconds), c.ChargeMarkerLifetimeSeconds, MinMarkerLifetimeSeconds, d.ChargeMarkerLifetimeSeconds, warnings, out v)) { c.ChargeMarkerLifetimeSeconds = v; used = true; }
             if (TryClampMin(nameof(CommanderConfig.ReformMarkerLifetimeSeconds), c.ReformMarkerLifetimeSeconds, MinMarkerLifetimeSeconds, d.ReformMarkerLifetimeSeconds, warnings, out v)) { c.ReformMarkerLifetimeSeconds = v; used = true; }
+            return used;
+        }
+
+        private static bool SanitizePerformanceBudgetIntervals(CommanderConfig c, CommanderConfig d, List<string> warnings)
+        {
+            bool used = false;
+            float v;
+            if (TryClampMin(nameof(CommanderConfig.PerformanceWarningThrottleSeconds), c.PerformanceWarningThrottleSeconds, 0.5f, d.PerformanceWarningThrottleSeconds, warnings, out v)) { c.PerformanceWarningThrottleSeconds = v; used = true; }
+            if (TryClampMin(nameof(CommanderConfig.TargetingIntervalSeconds), c.TargetingIntervalSeconds, 0.01f, d.TargetingIntervalSeconds, warnings, out v)) { c.TargetingIntervalSeconds = v; used = true; }
+            if (TryClampMin(nameof(CommanderConfig.CommanderScanIntervalSeconds), c.CommanderScanIntervalSeconds, MinScanIntervalSeconds, d.CommanderScanIntervalSeconds, warnings, out v)) { c.CommanderScanIntervalSeconds = v; used = true; }
+            if (TryClampMin(nameof(CommanderConfig.EligibilityScanIntervalSeconds), c.EligibilityScanIntervalSeconds, MinScanIntervalSeconds, d.EligibilityScanIntervalSeconds, warnings, out v)) { c.EligibilityScanIntervalSeconds = v; used = true; }
+            if (TryClampMin(nameof(CommanderConfig.RallyAbsorptionIntervalSeconds), c.RallyAbsorptionIntervalSeconds, MinScanIntervalSeconds, d.RallyAbsorptionIntervalSeconds, warnings, out v)) { c.RallyAbsorptionIntervalSeconds = v; used = true; }
+            if (TryClampMin(nameof(CommanderConfig.CavalrySequenceIntervalSeconds), c.CavalrySequenceIntervalSeconds, 0.01f, d.CavalrySequenceIntervalSeconds, warnings, out v)) { c.CavalrySequenceIntervalSeconds = v; used = true; }
+            if (TryClampMin(nameof(CommanderConfig.FeedbackTickIntervalSeconds), c.FeedbackTickIntervalSeconds, 0f, d.FeedbackTickIntervalSeconds, warnings, out v)) { c.FeedbackTickIntervalSeconds = v; used = true; }
+            if (TryClampMin(nameof(CommanderConfig.MarkerTickIntervalSeconds), c.MarkerTickIntervalSeconds, 0.01f, d.MarkerTickIntervalSeconds, warnings, out v)) { c.MarkerTickIntervalSeconds = v; used = true; }
+            if (!IsFiniteFloat(c.DiagnosticsTickIntervalSeconds) || c.DiagnosticsTickIntervalSeconds < 0f)
+            {
+                c.DiagnosticsTickIntervalSeconds = d.DiagnosticsTickIntervalSeconds;
+                used = true;
+            }
+            else if (c.DiagnosticsTickIntervalSeconds > 0f && c.DiagnosticsTickIntervalSeconds < MinScanIntervalSeconds)
+            {
+                warnings.Add($"{nameof(CommanderConfig.DiagnosticsTickIntervalSeconds)} below {MinScanIntervalSeconds}s when non-zero; clamped.");
+                c.DiagnosticsTickIntervalSeconds = MinScanIntervalSeconds;
+                used = true;
+            }
+
+            if (TryClampMin(nameof(CommanderConfig.ConfigReloadCheckIntervalSeconds), c.ConfigReloadCheckIntervalSeconds, MinScanIntervalSeconds, d.ConfigReloadCheckIntervalSeconds, warnings, out v)) { c.ConfigReloadCheckIntervalSeconds = v; used = true; }
             return used;
         }
 

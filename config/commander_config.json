@@ -127,5 +127,18 @@
   "IncludeCavalrySequence": true,
   "IncludeNativeOrderStatus": true,
 
-  "CommandValidationDebugLogIntervalSeconds": 0.4
+  "CommandValidationDebugLogIntervalSeconds": 0.4,
+
+  "EnablePerformanceDiagnostics": false,
+  "WarnOnOverBudget": false,
+  "PerformanceWarningThrottleSeconds": 2.0,
+  "TargetingIntervalSeconds": 0.25,
+  "CommanderScanIntervalSeconds": 3.0,
+  "EligibilityScanIntervalSeconds": 3.0,
+  "RallyAbsorptionIntervalSeconds": 3.0,
+  "CavalrySequenceIntervalSeconds": 0.25,
+  "FeedbackTickIntervalSeconds": 0.1,
+  "MarkerTickIntervalSeconds": 0.1,
+  "DiagnosticsTickIntervalSeconds": 0.0,
+  "ConfigReloadCheckIntervalSeconds": 5.0
 }
