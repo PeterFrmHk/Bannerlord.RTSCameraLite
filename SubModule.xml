@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Module>
+  <Name value="RTS Camera Lite"/>
+  <Id value="Bannerlord.RTSCameraLite"/>
+  <Version value="0.1.0"/>
+  <SingleplayerModule value="true"/>
+  <MultiplayerModule value="false"/>
+
+  <DependedModules>
+    <DependedModule Id="Native"/>
+    <DependedModule Id="SandBoxCore"/>
+    <DependedModule Id="Sandbox"/>
+    <DependedModule Id="StoryMode"/>
+    <DependedModule Id="CustomBattle"/>
+  </DependedModules>
+
+  <SubModules>
+    <SubModule>
+      <Name value="Bannerlord.RTSCameraLite"/>
+      <DLLName value="Bannerlord.RTSCameraLite.dll"/>
+      <SubModuleClassType value="Bannerlord.RTSCameraLite.SubModule"/>
+      <Tags>
+        <Tag key="DedicatedServerType" value="none"/>
+      </Tags>
+    </SubModule>
+  </SubModules>
+</Module>

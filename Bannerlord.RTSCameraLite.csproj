@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <RootNamespace>Bannerlord.RTSCameraLite</RootNamespace>
+    <AssemblyName>Bannerlord.RTSCameraLite</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <!-- Bannerlord module layout: SubModule.xml at module root, DLL under bin\Win64_Shipping_Client -->
+    <OutputPath>bin\Win64_Shipping_Client\</OutputPath>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <InformationalVersion>0.1.0-slice1</InformationalVersion>
+  </PropertyGroup>
+
+  <!-- Optional: set BannerlordGameFolder in local.props or env BANNERLORD_INSTALL -->
+  <Import Project="local.props" Condition="Exists('local.props')" />
+
+  <PropertyGroup>
+    <BannerlordGameFolder Condition="'$(BannerlordGameFolder)' == ''">$(BANNERLORD_INSTALL)</BannerlordGameFolder>
+  </PropertyGroup>
+
+  <!-- Prefer local game binaries when BannerlordGameFolder is set; otherwise use NuGet metadata refs. -->
+  <ItemGroup Condition="'$(BannerlordGameFolder)' != ''">
+    <Reference Include="TaleWorlds.Library">
+      <HintPath>$(BannerlordGameFolder)\bin\Win64_Shipping_Client\TaleWorlds.Library.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.MountAndBlade">
+      <HintPath>$(BannerlordGameFolder)\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.MountAndBlade.View">
+      <HintPath>$(BannerlordGameFolder)\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.View.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(BannerlordGameFolder)' == ''">
+    <PackageReference Include="Bannerlord.ReferenceAssemblies" Version="1.2.12.66233" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="SubModule.xml">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

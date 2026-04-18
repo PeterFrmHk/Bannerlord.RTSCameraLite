@@ -1,0 +1,62 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Documents\\Project Pandora\\Bannerlord.RTSCameraLite\\Bannerlord.RTSCameraLite.csproj": {}
+  },
+  "projects": {
+    "C:\\Documents\\Project Pandora\\Bannerlord.RTSCameraLite\\Bannerlord.RTSCameraLite.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Documents\\Project Pandora\\Bannerlord.RTSCameraLite\\Bannerlord.RTSCameraLite.csproj",
+        "projectName": "Bannerlord.RTSCameraLite",
+        "projectPath": "C:\\Documents\\Project Pandora\\Bannerlord.RTSCameraLite\\Bannerlord.RTSCameraLite.csproj",
+        "packagesPath": "C:\\Users\\litsu\\.nuget\\packages\\",
+        "outputPath": "C:\\Documents\\Project Pandora\\Bannerlord.RTSCameraLite\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\litsu\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net472"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net472": {
+            "targetAlias": "net472",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net472": {
+          "targetAlias": "net472",
+          "dependencies": {
+            "Bannerlord.ReferenceAssemblies": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[1.2.12.66233, )"
+            },
+            "Microsoft.NETFramework.ReferenceAssemblies": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[1.0.3, )"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.420\\RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

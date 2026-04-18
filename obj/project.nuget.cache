@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "dgSpecHash": "NdLGJ8Qlhxc=",
+  "success": true,
+  "projectFilePath": "C:\\Documents\\Project Pandora\\Bannerlord.RTSCameraLite\\Bannerlord.RTSCameraLite.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\litsu\\.nuget\\packages\\bannerlord.referenceassemblies\\1.2.12.66233\\bannerlord.referenceassemblies.1.2.12.66233.nupkg.sha512",
+    "C:\\Users\\litsu\\.nuget\\packages\\bannerlord.referenceassemblies.birthanddeath\\1.2.12.66233\\bannerlord.referenceassemblies.birthanddeath.1.2.12.66233.nupkg.sha512",
+    "C:\\Users\\litsu\\.nuget\\packages\\bannerlord.referenceassemblies.core\\1.2.12.66233\\bannerlord.referenceassemblies.core.1.2.12.66233.nupkg.sha512",
+    "C:\\Users\\litsu\\.nuget\\packages\\bannerlord.referenceassemblies.custombattle\\1.2.12.66233\\bannerlord.referenceassemblies.custombattle.1.2.12.66233.nupkg.sha512",
+    "C:\\Users\\litsu\\.nuget\\packages\\bannerlord.referenceassemblies.multiplayer\\1.2.12.66233\\bannerlord.referenceassemblies.multiplayer.1.2.12.66233.nupkg.sha512",
+    "C:\\Users\\litsu\\.nuget\\packages\\bannerlord.referenceassemblies.native\\1.2.12.66233\\bannerlord.referenceassemblies.native.1.2.12.66233.nupkg.sha512",
+    "C:\\Users\\litsu\\.nuget\\packages\\bannerlord.referenceassemblies.sandbox\\1.2.12.66233\\bannerlord.referenceassemblies.sandbox.1.2.12.66233.nupkg.sha512",
+    "C:\\Users\\litsu\\.nuget\\packages\\bannerlord.referenceassemblies.storymode\\1.2.12.66233\\bannerlord.referenceassemblies.storymode.1.2.12.66233.nupkg.sha512",
+    "C:\\Users\\litsu\\.nuget\\packages\\microsoft.netframework.referenceassemblies\\1.0.3\\microsoft.netframework.referenceassemblies.1.0.3.nupkg.sha512",
+    "C:\\Users\\litsu\\.nuget\\packages\\microsoft.netframework.referenceassemblies.net472\\1.0.3\\microsoft.netframework.referenceassemblies.net472.1.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}
