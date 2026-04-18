@@ -1,27 +1,51 @@
 using System;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
+using Bannerlord.RTSCameraLite.Config;
 using Bannerlord.RTSCameraLite.Input;
 
 namespace Bannerlord.RTSCameraLite.Camera
 {
     internal sealed class RTSCameraController
     {
-        public const float MoveSpeed = 12f;
-        public const float FastMoveMultiplier = 2.5f;
-        public const float RotationSpeedDegrees = 90f;
-        public const float ZoomSpeed = 3f;
-        public const float MinHeight = 6f;
-        public const float MaxHeight = 60f;
-
-        private const float DefaultHeight = 18f;
-        private const float DefaultPitch = 60f;
+        private float _moveSpeed = 12f;
+        private float _fastMoveMultiplier = 2.5f;
+        private float _rotationSpeedDegrees = 90f;
+        private float _zoomSpeed = 3f;
+        private float _minHeight = 6f;
+        private float _maxHeight = 60f;
+        private float _defaultHeight = 18f;
+        private float _defaultPitch = 60f;
 
         private RTSCameraPose _pose = new RTSCameraPose();
         private float _anchorZ;
         private bool _poseFromAgentSeeded;
 
         public bool HasSeededPose => _poseFromAgentSeeded;
+
+        public void ApplyCameraSettings(RTSCameraConfig config)
+        {
+            RTSCameraConfig source = config ?? ConfigDefaults.CreateDefault();
+
+            _moveSpeed = Clamp(source.MoveSpeed, 0.1f, 200f);
+            _fastMoveMultiplier = Clamp(source.FastMoveMultiplier, 1f, 10f);
+            _rotationSpeedDegrees = Clamp(source.RotationSpeedDegrees, 1f, 720f);
+            _zoomSpeed = Clamp(source.ZoomSpeed, 0f, 50f);
+
+            float minH = Clamp(source.MinHeight, 1f, 500f);
+            float maxH = Clamp(source.MaxHeight, 1f, 500f);
+            if (minH >= maxH)
+            {
+                RTSCameraConfig d = ConfigDefaults.CreateDefault();
+                minH = d.MinHeight;
+                maxH = d.MaxHeight;
+            }
+
+            _minHeight = minH;
+            _maxHeight = maxH;
+            _defaultHeight = Clamp(source.DefaultHeight, _minHeight, _maxHeight);
+            _defaultPitch = Clamp(source.DefaultPitch, 0f, 89f);
+        }
 
         public void InitializeFromAgent(Agent agent)
         {
@@ -40,9 +64,9 @@ namespace Bannerlord.RTSCameraLite.Camera
 
             _pose = new RTSCameraPose
             {
-                Position = new Vec3(basePosition.x, basePosition.y, _anchorZ + DefaultHeight),
-                Height = DefaultHeight,
-                Pitch = DefaultPitch,
+                Position = new Vec3(basePosition.x, basePosition.y, _anchorZ + _defaultHeight),
+                Height = _defaultHeight,
+                Pitch = _defaultPitch,
                 Yaw = 0f
             };
             _poseFromAgentSeeded = true;
@@ -56,10 +80,10 @@ namespace Bannerlord.RTSCameraLite.Camera
             }
 
             float turn = (input.RotateRight ? 1f : 0f) - (input.RotateLeft ? 1f : 0f);
-            float yawRad = RotationSpeedDegrees * ((float)Math.PI / 180f) * dt;
+            float yawRad = _rotationSpeedDegrees * ((float)Math.PI / 180f) * dt;
             _pose.Yaw += turn * yawRad;
 
-            float move = MoveSpeed * dt * (input.FastMove ? FastMoveMultiplier : 1f);
+            float move = _moveSpeed * dt * (input.FastMove ? _fastMoveMultiplier : 1f);
             float sinY = (float)Math.Sin(_pose.Yaw);
             float cosY = (float)Math.Cos(_pose.Yaw);
             Vec3 forward = new Vec3(sinY, cosY, 0f);
@@ -94,14 +118,34 @@ namespace Bannerlord.RTSCameraLite.Camera
             float nx = _pose.Position.x + dx;
             float ny = _pose.Position.y + dy;
 
-            float heightDelta = input.ZoomDelta * ZoomSpeed * dt;
-            _pose.Height = Clamp(_pose.Height + heightDelta, MinHeight, MaxHeight);
+            float heightDelta = input.ZoomDelta * _zoomSpeed * dt;
+            _pose.Height = Clamp(_pose.Height + heightDelta, _minHeight, _maxHeight);
             _pose.Position = new Vec3(nx, ny, _anchorZ + _pose.Height);
         }
 
         public RTSCameraPose GetPose()
         {
             return _pose;
+        }
+
+        /// <summary>
+        /// Moves the camera origin over the given world point while keeping current height and yaw.
+        /// </summary>
+        public void FocusAt(Vec3 worldPosition)
+        {
+            if (!_poseFromAgentSeeded)
+            {
+                return;
+            }
+
+            if (float.IsNaN(worldPosition.x) || float.IsNaN(worldPosition.y) || float.IsNaN(worldPosition.z) ||
+                float.IsInfinity(worldPosition.x) || float.IsInfinity(worldPosition.y) || float.IsInfinity(worldPosition.z))
+            {
+                return;
+            }
+
+            _anchorZ = worldPosition.z;
+            _pose.Position = new Vec3(worldPosition.x, worldPosition.y, _anchorZ + _pose.Height);
         }
 
         public void Reset()

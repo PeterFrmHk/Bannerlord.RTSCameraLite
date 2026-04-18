@@ -12,7 +12,14 @@ namespace Bannerlord.RTSCameraLite.Input
         public bool RotateLeft { get; }
         public bool RotateRight { get; }
         public bool FastMove { get; }
+
         public float ZoomDelta { get; }
+
+        public bool NextFormation { get; }
+
+        public bool PreviousFormation { get; }
+
+        public bool FocusSelectedFormation { get; }
 
         public InputSnapshot(
             bool forward,
@@ -22,7 +29,10 @@ namespace Bannerlord.RTSCameraLite.Input
             bool rotateLeft,
             bool rotateRight,
             bool fastMove,
-            float zoomDelta)
+            float zoomDelta,
+            bool nextFormation,
+            bool previousFormation,
+            bool focusSelectedFormation)
         {
             Forward = forward;
             Back = back;
@@ -32,6 +42,9 @@ namespace Bannerlord.RTSCameraLite.Input
             RotateRight = rotateRight;
             FastMove = fastMove;
             ZoomDelta = zoomDelta;
+            NextFormation = nextFormation;
+            PreviousFormation = previousFormation;
+            FocusSelectedFormation = focusSelectedFormation;
         }
     }
 }

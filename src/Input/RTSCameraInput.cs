@@ -1,27 +1,45 @@
-using TaleWorlds.Engine;
+using Bannerlord.RTSCameraLite.Config;
 using TaleWorlds.InputSystem;
 
 namespace Bannerlord.RTSCameraLite.Input
 {
     /// <summary>
     /// Polls TaleWorlds input for RTS camera (read-only; does not consume native input).
+    /// All RTS-specific reads stay here. Key names from JSON are parsed when config loads
+    /// (<see cref="ConfigService"/>); bindings carry resolved <see cref="InputKey"/> values.
     /// </summary>
     internal static class RTSCameraInput
     {
-        public static InputSnapshot Read(IInputContext input)
+        private static readonly InputSnapshot EmptySnapshot =
+            new InputSnapshot(false, false, false, false, false, false, false, 0f, false, false, false);
+
+        public static InputSnapshot Read(
+            IInputContext input,
+            InputOwnershipState ownership,
+            ConfigService.CameraKeyBindings keys)
+        {
+            if (ownership == null || !ownership.RtsModeOwnsCameraInput)
+            {
+                return EmptySnapshot;
+            }
+
+            return ReadInternal(input, keys);
+        }
+
+        private static InputSnapshot ReadInternal(IInputContext input, ConfigService.CameraKeyBindings keys)
         {
             if (input == null)
             {
-                return new InputSnapshot(false, false, false, false, false, false, false, 0f);
+                return EmptySnapshot;
             }
 
-            bool forward = input.IsKeyDown(InputKey.W);
-            bool back = input.IsKeyDown(InputKey.S);
-            bool left = input.IsKeyDown(InputKey.A);
-            bool right = input.IsKeyDown(InputKey.D);
-            bool rotateLeft = input.IsKeyDown(InputKey.Q);
-            bool rotateRight = input.IsKeyDown(InputKey.E);
-            bool fastMove = input.IsKeyDown(InputKey.LeftShift) || input.IsKeyDown(InputKey.RightShift);
+            bool forward = IsKeyDownSafe(input, keys.MoveForward);
+            bool back = IsKeyDownSafe(input, keys.MoveBack);
+            bool left = IsKeyDownSafe(input, keys.MoveLeft);
+            bool right = IsKeyDownSafe(input, keys.MoveRight);
+            bool rotateLeft = IsKeyDownSafe(input, keys.RotateLeft);
+            bool rotateRight = IsKeyDownSafe(input, keys.RotateRight);
+            bool fastMove = IsKeyDownSafe(input, keys.FastMove);
 
             float zoom = 0f;
             if (input.IsKeyPressed(InputKey.MouseScrollUp))
@@ -34,16 +52,19 @@ namespace Bannerlord.RTSCameraLite.Input
                 zoom -= 1f;
             }
 
-            // Fallback if wheel bindings do not fire on a given machine / layout.
-            if (input.IsKeyDown(InputKey.R))
+            if (IsKeyDownSafe(input, keys.ZoomIn))
             {
                 zoom += 0.35f;
             }
 
-            if (input.IsKeyDown(InputKey.F))
+            if (IsKeyDownSafe(input, keys.ZoomOut))
             {
                 zoom -= 0.35f;
             }
+
+            bool nextFormation = IsKeyPressedSafe(input, keys.NextFormation);
+            bool previousFormation = IsKeyPressedSafe(input, keys.PreviousFormation);
+            bool focusFormation = IsKeyPressedSafe(input, keys.FocusSelectedFormation);
 
             return new InputSnapshot(
                 forward,
@@ -53,7 +74,34 @@ namespace Bannerlord.RTSCameraLite.Input
                 rotateLeft,
                 rotateRight,
                 fastMove,
-                zoom);
+                zoom,
+                nextFormation,
+                previousFormation,
+                focusFormation);
+        }
+
+        private static bool IsKeyDownSafe(IInputContext input, InputKey key)
+        {
+            try
+            {
+                return input.IsKeyDown(key);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool IsKeyPressedSafe(IInputContext input, InputKey key)
+        {
+            try
+            {
+                return input.IsKeyPressed(key);
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

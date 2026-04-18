@@ -1,5 +1,9 @@
 ﻿# Camera hooks research (Slice 5)
 
+Completing this research for **your** Bannerlord build satisfies the **Slice 5** prerequisite in [`../slice-hard-gates.md`](../slice-hard-gates.md).
+
+**Assembly inventory & API tables:** see [`base-game-camera-scan.md`](base-game-camera-scan.md) (local Steam + Native `View` DLL reflection, 2026-04-18).
+
 ## ILSpy workflow (local Bannerlord binaries)
 
 1. Install [ILSpy](https://github.com/icsharpcode/ILSpy/releases) or the ILSpy Visual Studio extension.

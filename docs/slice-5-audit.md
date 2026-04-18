@@ -1,5 +1,7 @@
 ﻿# Slice 5 audit (RTS camera bridge + override hook)
 
+> **Hard gate — do not implement this slice until research is done.** See [`slice-hard-gates.md`](slice-hard-gates.md) and complete [`research/camera-hooks.md`](research/camera-hooks.md) for your game version.
+
 ## User tests checklist (owner)
 
 ### Build / module hygiene
