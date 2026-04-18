@@ -11,7 +11,7 @@
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
     <FileVersion>0.1.0.0</FileVersion>
-    <InformationalVersion>0.1.0-slice12</InformationalVersion>
+    <InformationalVersion>0.1.0-slice15</InformationalVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -19,7 +19,7 @@
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
   </PropertyGroup>
 
-  <!-- Slice 10: doctrine; Slice 11: eligibility; Slice 12: rally absorption + layout planning (no orders). -->
+  <!-- Slice 10 doctrine; Slice 11 eligibility; Slice 12 rally/layout; Slice 15 command router + restrictions. -->
   <ItemGroup>
     <Compile Remove="src\**\*.cs" />
     <Compile Include="src\SubModule.cs" />
@@ -34,6 +34,7 @@
     <Compile Include="src\Input\CommanderInputSnapshot.cs" />
     <Compile Include="src\Adapters\CameraBridge.cs" />
     <Compile Include="src\Adapters\CameraBridgeResult.cs" />
+    <Compile Include="src\Adapters\NativeOrderPrimitive.cs" />
     <Compile Include="src\Adapters\NativeOrderPrimitiveExecutor.cs" />
     <Compile Include="src\Adapters\NativeOrderResult.cs" />
     <Compile Include="src\Adapters\FormationDataAdapter.cs" />
@@ -79,6 +80,14 @@
     <Compile Include="src\Doctrine\TroopAbsorptionController.cs" />
     <Compile Include="src\Doctrine\TroopAbsorptionRecord.cs" />
     <Compile Include="src\Doctrine\TroopFormationState.cs" />
+    <Compile Include="src\Doctrine\RestrictionDecision.cs" />
+    <Compile Include="src\Doctrine\FormationRestrictionService.cs" />
+    <Compile Include="src\Commands\CommandType.cs" />
+    <Compile Include="src\Commands\CommandIntent.cs" />
+    <Compile Include="src\Commands\CommandContext.cs" />
+    <Compile Include="src\Commands\CommandValidationResult.cs" />
+    <Compile Include="src\Commands\CommandExecutionDecision.cs" />
+    <Compile Include="src\Commands\CommandRouter.cs" />
   </ItemGroup>
 
   <ItemGroup>

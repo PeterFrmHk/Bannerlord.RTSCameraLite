@@ -71,5 +71,14 @@
   "CohesionBreakRadius": 35.0,
   "SlotReassignmentCooldownSeconds": 3.0,
   "RallyScanIntervalSeconds": 3.0,
-  "EnableRallyAbsorptionDebug": true
+  "EnableRallyAbsorptionDebug": true,
+
+  "EnableCommandRouter": true,
+  "EnableCommandValidationDebug": true,
+  "AllowBasicChargeWithoutAdvancedDoctrine": true,
+  "AllowNoCommanderBasicHold": true,
+  "AllowNoCommanderBasicFollow": true,
+  "BlockAdvancedCommandsWithoutCommander": true,
+  "EnableNativePrimitiveOrderExecution": false,
+  "CommandValidationDebugLogIntervalSeconds": 0.4
 }

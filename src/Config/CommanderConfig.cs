@@ -169,7 +169,7 @@ namespace Bannerlord.RTSCameraLite.Config
         public bool BlockAdvancedCommandsWithoutCommander { get; set; }
 
         /// <summary>
-        /// When true, <see cref="Commands.CommandRouter.Decide"/> may call <see cref="Adapters.NativeOrderPrimitiveExecutor"/> after validation.
+        /// When true, command routing may call <c>NativeOrderPrimitiveExecutor</c> after validation.
         /// Default false: validation-only unless explicitly enabled.
         /// </summary>
         public bool EnableNativePrimitiveOrderExecution { get; set; }

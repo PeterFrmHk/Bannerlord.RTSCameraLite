@@ -1,48 +1,38 @@
-using Bannerlord.RTSCameraLite.Tactical;
-using TaleWorlds.Library;
+using Bannerlord.RTSCameraLite.Commander;
+using Bannerlord.RTSCameraLite.Doctrine;
 using TaleWorlds.MountAndBlade;
 
 namespace Bannerlord.RTSCameraLite.Commands
 {
-    /// <summary>
-    /// World state used to validate a <see cref="CommandIntent"/> (no order execution).
-    /// </summary>
+    /// <summary>Mission and doctrine/eligibility snapshot for validating a <see cref="CommandIntent"/> (Slice 15).</summary>
     public sealed class CommandContext
     {
         public CommandContext(
             TaleWorlds.MountAndBlade.Mission mission,
-            Formation selectedFormation,
-            bool rtsModeEnabled,
-            Vec3 cursorOrCameraFallbackWorldPosition,
-            GroundTargetResult currentGroundTarget)
+            bool commanderModeEnabled,
+            CommanderPresenceResult commander,
+            FormationDoctrineProfile doctrineProfile,
+            FormationEligibilityResult eligibility,
+            string sourceReason)
         {
             Mission = mission;
-            SelectedFormation = selectedFormation;
-            RtsModeEnabled = rtsModeEnabled;
-            CursorOrCameraFallbackWorldPosition = cursorOrCameraFallbackWorldPosition;
-            CurrentGroundTarget = currentGroundTarget;
+            CommanderModeEnabled = commanderModeEnabled;
+            Commander = commander;
+            DoctrineProfile = doctrineProfile;
+            Eligibility = eligibility;
+            SourceReason = sourceReason ?? string.Empty;
         }
 
         public TaleWorlds.MountAndBlade.Mission Mission { get; }
 
-        public Formation SelectedFormation { get; }
+        public bool CommanderModeEnabled { get; }
 
-        public bool RtsModeEnabled { get; }
+        public CommanderPresenceResult Commander { get; }
 
-        /// <summary>
-        /// Legacy fallback when no resolved ground target is available.
-        /// </summary>
-        public Vec3 CursorOrCameraFallbackWorldPosition { get; }
+        public FormationDoctrineProfile DoctrineProfile { get; }
 
-        /// <summary>
-        /// Latest sampled ground target from <see cref="Bannerlord.RTSCameraLite.Tactical.GroundTargetResolver"/> while RTS is active.
-        /// </summary>
-        public GroundTargetResult CurrentGroundTarget { get; }
+        public FormationEligibilityResult Eligibility { get; }
 
-        /// <summary>
-        /// Convenience: valid world position when <see cref="GroundTargetResult.Success"/> is true.
-        /// </summary>
-        public Vec3? ResolvedGroundPosition =>
-            CurrentGroundTarget.Success ? CurrentGroundTarget.Position : (Vec3?)null;
+        public string SourceReason { get; }
     }
 }

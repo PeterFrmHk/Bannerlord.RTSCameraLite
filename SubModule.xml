@@ -2,7 +2,7 @@
 <Module>
   <Name value="RTS Commander Doctrine"/>
   <Id value="Bannerlord.RTSCameraLite"/>
-  <Version value="v0.1.0-slice12"/>
+  <Version value="v0.1.0-slice15"/>
   <SingleplayerModule value="true"/>
   <MultiplayerModule value="false"/>
 

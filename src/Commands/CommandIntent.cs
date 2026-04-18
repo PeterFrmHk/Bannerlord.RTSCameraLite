@@ -3,12 +3,12 @@ using TaleWorlds.MountAndBlade;
 
 namespace Bannerlord.RTSCameraLite.Commands
 {
-    /// <summary>
-    /// Describes what the player asked to do; validated by <see cref="CommandRouter"/> and optionally executed natively (slice 12+).
-    /// </summary>
+    /// <summary>Describes a command request before restriction and native execution (Slice 15).</summary>
     public sealed class CommandIntent
     {
         public CommandType Type { get; set; }
+
+        public Formation SourceFormation { get; set; }
 
         public Formation TargetFormation { get; set; }
 
@@ -20,11 +20,8 @@ namespace Bannerlord.RTSCameraLite.Commands
 
         public bool RequiresPosition { get; set; }
 
-        public bool RequiresDirection { get; set; }
+        public bool RequiresTargetFormation { get; set; }
 
-        /// <summary>
-        /// True when <see cref="CommandContext.ResolvedGroundPosition"/> supplied <see cref="TargetPosition"/> (slice 11).
-        /// </summary>
-        public bool FromResolvedGroundTarget { get; set; }
+        public bool RequiresCommander { get; set; }
     }
 }

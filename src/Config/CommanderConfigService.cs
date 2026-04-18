@@ -105,6 +105,8 @@ namespace Bannerlord.RTSCameraLite.Config
                 CommanderConfigDefaults.HarmonizeLegacyEligibilityFields(parsed);
                 ApplyOmittedSlice12RallyDefaults(json, parsed);
                 CommanderConfigDefaults.HarmonizeLegacyRallyFields(parsed);
+                ApplyOmittedSlice15CommandRouterDefaults(json, parsed);
+                CommanderConfigDefaults.HarmonizeLegacyCommandRouterFields(parsed);
 
                 return new ConfigLoadResult(
                     loaded: true,
@@ -452,6 +454,72 @@ namespace Bannerlord.RTSCameraLite.Config
                 if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableEligibilityDebug)))
                 {
                     parsed.EnableEligibilityDebug = d.EnableEligibilityDebug;
+                }
+            }
+            catch
+            {
+                // Ignore merge failures.
+            }
+        }
+
+        /// <summary>
+        /// Omitted Slice 15 keys deserialize to false / 0 — restore command router defaults when absent from JSON.
+        /// </summary>
+        private static void ApplyOmittedSlice15CommandRouterDefaults(string json, CommanderConfig parsed)
+        {
+            if (parsed == null || string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            try
+            {
+                using JsonDocument doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                JsonElement root = doc.RootElement;
+                CommanderConfig d = CommanderConfigDefaults.CreateDefault();
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableCommandRouter)))
+                {
+                    parsed.EnableCommandRouter = d.EnableCommandRouter;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableCommandValidationDebug)))
+                {
+                    parsed.EnableCommandValidationDebug = d.EnableCommandValidationDebug;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.AllowBasicChargeWithoutAdvancedDoctrine)))
+                {
+                    parsed.AllowBasicChargeWithoutAdvancedDoctrine = d.AllowBasicChargeWithoutAdvancedDoctrine;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.AllowNoCommanderBasicHold)))
+                {
+                    parsed.AllowNoCommanderBasicHold = d.AllowNoCommanderBasicHold;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.AllowNoCommanderBasicFollow)))
+                {
+                    parsed.AllowNoCommanderBasicFollow = d.AllowNoCommanderBasicFollow;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.BlockAdvancedCommandsWithoutCommander)))
+                {
+                    parsed.BlockAdvancedCommandsWithoutCommander = d.BlockAdvancedCommandsWithoutCommander;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableNativePrimitiveOrderExecution)))
+                {
+                    parsed.EnableNativePrimitiveOrderExecution = d.EnableNativePrimitiveOrderExecution;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CommandValidationDebugLogIntervalSeconds)))
+                {
+                    parsed.CommandValidationDebugLogIntervalSeconds = d.CommandValidationDebugLogIntervalSeconds;
                 }
             }
             catch

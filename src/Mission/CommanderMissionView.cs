@@ -3,11 +3,14 @@ using Bannerlord.RTSCameraLite.Adapters;
 using TaleWorlds.Core;
 using Bannerlord.RTSCameraLite.Camera;
 using Bannerlord.RTSCameraLite.Commander;
+using Bannerlord.RTSCameraLite.Commands;
 using Bannerlord.RTSCameraLite.Config;
 using Bannerlord.RTSCameraLite.Core;
 using Bannerlord.RTSCameraLite.Doctrine;
 using Bannerlord.RTSCameraLite.Equipment;
 using Bannerlord.RTSCameraLite.Input;
+using TaleWorlds.InputSystem;
+using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.View.MissionViews;
 
@@ -48,6 +51,8 @@ namespace Bannerlord.RTSCameraLite.Mission
         private CommanderRallySettings _commanderRallySettings;
         private float _rallyScanAccum;
         private float _absorptionMissionTime;
+        private CommandRouter _commandRouter;
+        private float _secondsSinceCommandValidationLog;
 
         public CommanderModeState CommanderModeState => _commanderModeState;
 
@@ -97,6 +102,8 @@ namespace Bannerlord.RTSCameraLite.Mission
             _commanderRallySettings = CommanderRallySettings.FromConfig(_commanderConfig);
             _rallyScanAccum = System.Math.Max(0.1f, _commanderRallySettings.RallyScanIntervalSeconds);
             _commanderPresenceScanTimer = CommanderPresenceScanIntervalSeconds;
+            _commandRouter = new CommandRouter(_commanderConfig, new NativeOrderPrimitiveExecutor());
+            _secondsSinceCommandValidationLog = 0f;
             LogShellActiveOnce();
             LogEnabledTransition();
         }
@@ -149,6 +156,7 @@ namespace Bannerlord.RTSCameraLite.Mission
             if (_commanderModeState.IsEnabled)
             {
                 MaybeScanCommanderAnchors(dt);
+                MaybeDebugCommandRouterKeys(dt);
             }
         }
 
@@ -542,6 +550,192 @@ namespace Bannerlord.RTSCameraLite.Mission
                 $"{ModConstants.ModuleId}: internal commander camera pose initialized — pos=({pose.Position.x:F1},{pose.Position.y:F1},{pose.Position.z:F1}), yaw={pose.Yaw:F3} rad, pitch={pose.Pitch:F1}°, h={pose.Height:F1}");
         }
 
+        private void MaybeDebugCommandRouterKeys(float dt)
+        {
+            if (_commandRouter == null || !_commanderConfig.EnableCommandRouter || Mission?.PlayerTeam == null)
+            {
+                return;
+            }
+
+            _secondsSinceCommandValidationLog += dt;
+            float logInterval = System.Math.Max(0.15f, _commanderConfig.CommandValidationDebugLogIntervalSeconds);
+            IInputContext input = Input;
+            if (input == null)
+            {
+                return;
+            }
+
+            try
+            {
+                Formation formation = TryPickFirstPlayerFormation();
+                if (formation == null)
+                {
+                    return;
+                }
+
+                if (input.IsKeyReleased(InputKey.H))
+                {
+                    RunCommandRouterDebug(BuildBasicHoldIntent(formation), logInterval);
+                    return;
+                }
+
+                if (input.IsKeyReleased(InputKey.C))
+                {
+                    RunCommandRouterDebug(BuildChargeIntent(formation), logInterval);
+                    return;
+                }
+
+                if (input.IsKeyReleased(InputKey.M))
+                {
+                    CommandIntent advance = BuildAdvanceOrMoveIntent(formation);
+                    if (advance == null)
+                    {
+                        if (_commanderConfig.EnableCommandValidationDebug && _secondsSinceCommandValidationLog >= logInterval)
+                        {
+                            ModLogger.LogDebug(
+                                $"{ModConstants.ModuleId}: Cmd validate AdvanceOrMove: skipped (no placeholder target).");
+                            _secondsSinceCommandValidationLog = 0f;
+                        }
+
+                        return;
+                    }
+
+                    RunCommandRouterDebug(advance, logInterval);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: command router debug keys skipped ({ex.Message})");
+            }
+        }
+
+        private Formation TryPickFirstPlayerFormation()
+        {
+            foreach (Formation formation in Mission.PlayerTeam.FormationsIncludingEmpty)
+            {
+                if (formation != null && formation.CountOfUnits > 0)
+                {
+                    return formation;
+                }
+            }
+
+            return null;
+        }
+
+        private FormationDoctrineProfile ResolveDoctrineProfile(Formation formation, CommanderPresenceResult presence)
+        {
+            DoctrineScoreResult scored = _doctrineScoreCalculator.Compute(
+                Mission,
+                formation,
+                presence,
+                DoctrineScoreSettings.FromConfig(_commanderConfig));
+            if (scored.ComputationSucceeded && scored.Profile != null)
+            {
+                return scored.Profile;
+            }
+
+            return new FormationDoctrineProfile(
+                0f,
+                0f,
+                0f,
+                0f,
+                0f,
+                0f,
+                0f,
+                0f,
+                FormationCompositionProfile.Empty("doctrine unavailable"),
+                "fallback",
+                false);
+        }
+
+        private CommandContext BuildCommandContext(Formation formation, string sourceReason)
+        {
+            CommanderPresenceResult presence = _commanderAssignmentService.DetectCommander(Mission, formation);
+            FormationDoctrineProfile doctrine = ResolveDoctrineProfile(formation, presence);
+            FormationEligibilityResult elig = _formationEligibilityRules.Evaluate(formation, presence, doctrine);
+            return new CommandContext(
+                Mission,
+                _commanderModeState.IsEnabled,
+                presence,
+                doctrine,
+                elig,
+                sourceReason);
+        }
+
+        private void RunCommandRouterDebug(CommandIntent intent, float logInterval)
+        {
+            CommandContext context = BuildCommandContext(intent.SourceFormation, intent.Source);
+            CommandValidationResult validation = _commandRouter.Validate(intent, context);
+            CommandExecutionDecision decision = _commandRouter.Decide(intent, context);
+            if (_commanderConfig.EnableCommandValidationDebug && _secondsSinceCommandValidationLog >= logInterval)
+            {
+                ModLogger.LogDebug(
+                    $"{ModConstants.ModuleId}: Cmd {intent.Type}: valid={validation.IsValid}, blocked={validation.IsBlocked}, {validation.Message}; execute={decision.ShouldExecute}, native={decision.RequiresNativeOrder}, cavSeq={decision.RequiresCavalrySequence}, prim={decision.NativePrimitive}, {decision.Reason}");
+                _secondsSinceCommandValidationLog = 0f;
+            }
+        }
+
+        private CommandIntent BuildBasicHoldIntent(Formation formation)
+        {
+            var intent = new CommandIntent
+            {
+                Type = CommandType.BasicHold,
+                SourceFormation = formation,
+                RequiresPosition = true,
+                RequiresTargetFormation = false,
+                RequiresCommander = false,
+                Source = "debug-key-H"
+            };
+            FormationDataResult center = _formationDataAdapter.TryGetFormationCenter(formation);
+            if (center.Success)
+            {
+                intent.TargetPosition = center.Vec3;
+            }
+
+            return intent;
+        }
+
+        private static CommandIntent BuildChargeIntent(Formation formation)
+        {
+            return new CommandIntent
+            {
+                Type = CommandType.Charge,
+                SourceFormation = formation,
+                RequiresPosition = false,
+                RequiresTargetFormation = false,
+                RequiresCommander = false,
+                Source = "debug-key-C"
+            };
+        }
+
+        private CommandIntent BuildAdvanceOrMoveIntent(Formation formation)
+        {
+            FormationDataResult center = _formationDataAdapter.TryGetFormationCenter(formation);
+            if (!center.Success)
+            {
+                return null;
+            }
+
+            Vec3 target = center.Vec3;
+            if (_cameraController.HasPose)
+            {
+                CommanderCameraPose pose = _cameraController.GetPose();
+                float yaw = pose.Yaw;
+                target = center.Vec3 + new Vec3((float)System.Math.Cos(yaw), (float)System.Math.Sin(yaw), 0f) * 12f;
+            }
+
+            return new CommandIntent
+            {
+                Type = CommandType.AdvanceOrMove,
+                SourceFormation = formation,
+                TargetPosition = target,
+                RequiresPosition = true,
+                RequiresTargetFormation = false,
+                RequiresCommander = false,
+                Source = "debug-key-M"
+            };
+        }
+
         private void EnsureLifecycleCleanup(string reason)
         {
             if (_lifecycleCleanupDone)
@@ -573,6 +767,7 @@ namespace Bannerlord.RTSCameraLite.Mission
             _doctrineScanAccum = 0f;
             _rallyScanAccum = 0f;
             _absorptionMissionTime = 0f;
+            _secondsSinceCommandValidationLog = 0f;
             _troopAbsorptionController?.Clear();
             _cameraController.Reset();
         }

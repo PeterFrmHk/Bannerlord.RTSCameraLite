@@ -1,129 +1,218 @@
 using System;
+using Bannerlord.RTSCameraLite.Adapters;
+using Bannerlord.RTSCameraLite.Config;
+using Bannerlord.RTSCameraLite.Doctrine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
 namespace Bannerlord.RTSCameraLite.Commands
 {
     /// <summary>
-    /// Validates <see cref="CommandIntent"/> against <see cref="CommandContext"/>.
-    /// Native issuance is handled by <see cref="NativeOrderExecutor"/> after successful validation (slice 12).
+    /// Validates intents and optionally forwards to <see cref="NativeOrderPrimitiveExecutor"/> when enabled (Slice 15).
     /// </summary>
-    internal sealed class CommandRouter
+    public sealed class CommandRouter
     {
-        public CommandExecutionResult ExecuteValidated(
-            CommandIntent intent,
-            CommandContext context,
-            NativeOrderExecutor executor)
+        private readonly CommanderConfig _config;
+        private readonly FormationRestrictionService _restrictions;
+        private readonly NativeOrderPrimitiveExecutor _nativePrimitives;
+
+        public CommandRouter(CommanderConfig config, NativeOrderPrimitiveExecutor nativePrimitives = null)
         {
-            if (executor == null)
-            {
-                return CommandExecutionResult.Failure(
-                    intent?.Type ?? CommandType.None,
-                    "No order executor.");
-            }
-
-            CommandValidationResult validation = Validate(intent, context);
-            if (!validation.IsValid)
-            {
-                return CommandExecutionResult.Failure(intent?.Type ?? CommandType.None, validation.Message);
-            }
-
-            return executor.Execute(intent, context);
+            _config = config ?? CommanderConfigDefaults.CreateDefault();
+            _restrictions = new FormationRestrictionService(_config);
+            _nativePrimitives = nativePrimitives ?? new NativeOrderPrimitiveExecutor();
         }
 
         public CommandValidationResult Validate(CommandIntent intent, CommandContext context)
         {
             try
             {
+                if (!_config.EnableCommandRouter)
+                {
+                    return CommandValidationResult.Invalid("command router disabled in config", intent);
+                }
+
                 if (intent == null)
                 {
-                    return CommandValidationResult.Invalid("No command intent.");
+                    return CommandValidationResult.Invalid("intent is null");
                 }
 
                 if (context == null)
                 {
-                    return CommandValidationResult.Invalid("No command context.");
-                }
-
-                if (!context.RtsModeEnabled)
-                {
-                    return CommandValidationResult.Invalid("RTS mode is off.");
-                }
-
-                if (context.Mission == null)
-                {
-                    return CommandValidationResult.Invalid("No active mission.");
+                    return CommandValidationResult.Invalid("context is null", intent);
                 }
 
                 if (intent.Type == CommandType.None)
                 {
-                    return CommandValidationResult.Valid("No command (None).");
+                    return CommandValidationResult.Valid("none", intent);
                 }
 
-                if (intent.TargetFormation == null || !IsFormationUsable(intent.TargetFormation))
+                if (!context.CommanderModeEnabled)
                 {
-                    return CommandValidationResult.Invalid("No valid formation selected for this command.");
+                    return CommandValidationResult.Blocked("commander mode is not enabled", intent);
                 }
 
-                if (context.Mission.MainAgent == null)
+                if (context.Mission == null)
                 {
-                    return CommandValidationResult.Invalid("No player main agent for tactical orders.");
+                    return CommandValidationResult.Blocked("mission is null", intent);
                 }
 
-                if (!ReferenceEquals(intent.TargetFormation.Team, context.Mission.MainAgent.Team))
+                if (intent.RequiresCommander
+                    && (context.Commander == null || !context.Commander.HasCommander))
                 {
-                    return CommandValidationResult.Invalid("Formation is not on the player's team.");
+                    return CommandValidationResult.Invalid("command requires a commander", intent);
+                }
+
+                if (intent.SourceFormation == null)
+                {
+                    return CommandValidationResult.Invalid("source formation is null", intent);
                 }
 
                 if (intent.RequiresPosition)
                 {
                     if (!intent.TargetPosition.HasValue)
                     {
-                        return CommandValidationResult.Invalid("This command requires a target position.");
+                        return CommandValidationResult.Invalid("target position is required", intent);
                     }
 
                     if (!IsFiniteVec3(intent.TargetPosition.Value))
                     {
-                        return CommandValidationResult.Invalid("Target position is not usable.");
+                        return CommandValidationResult.Invalid("target position is not finite", intent);
                     }
                 }
 
-                if (intent.RequiresDirection)
+                if (intent.RequiresTargetFormation && intent.TargetFormation == null)
                 {
-                    if (!intent.TargetDirection.HasValue)
-                    {
-                        return CommandValidationResult.Invalid("This command requires a direction.");
-                    }
+                    return CommandValidationResult.Invalid("target formation is required", intent);
+                }
 
-                    if (!IsFiniteVec2(intent.TargetDirection.Value))
-                    {
-                        return CommandValidationResult.Invalid("Target direction is not usable.");
-                    }
+                RestrictionDecision restriction = _restrictions.Evaluate(intent, context);
+                if (restriction.Blocked)
+                {
+                    return CommandValidationResult.Blocked(restriction.Reason, intent);
+                }
+
+                if (!restriction.Allowed)
+                {
+                    return CommandValidationResult.Invalid(restriction.Reason, intent);
                 }
 
                 return CommandValidationResult.Valid(
-                    $"{intent.Type} for selected formation passed validation ({intent.Source}).");
+                    string.IsNullOrEmpty(intent.Source) ? "validated" : intent.Source,
+                    intent);
             }
             catch (Exception ex)
             {
-                return CommandValidationResult.Invalid($"Validation error: {ex.Message}");
+                return CommandValidationResult.Invalid("validate threw: " + ex.Message, intent);
             }
         }
 
-        private static bool IsFormationUsable(Formation formation)
+        public CommandExecutionDecision Decide(CommandIntent intent, CommandContext context)
         {
+            CommandValidationResult validation = Validate(intent, context);
+            if (!validation.IsValid || validation.IsBlocked)
+            {
+                return new CommandExecutionDecision(
+                    false,
+                    false,
+                    false,
+                    NativeOrderPrimitive.None,
+                    validation.Message);
+            }
+
+            bool canRunNative = _config.EnableNativePrimitiveOrderExecution;
+            MapPrimitives(intent, out NativeOrderPrimitive primitive, out bool requiresCavalrySequence, out bool requiresNative);
+
+            bool shouldExecute = canRunNative && requiresNative && primitive != NativeOrderPrimitive.None;
+            string reason = shouldExecute
+                ? "native primitive execution enabled"
+                : (canRunNative ? "no mapped primitive for this command" : "native primitive execution disabled in config");
+
+            if (shouldExecute)
+            {
+                TryInvokePrimitive(intent, primitive);
+            }
+
+            return new CommandExecutionDecision(
+                shouldExecute,
+                requiresNative,
+                requiresCavalrySequence,
+                primitive,
+                reason);
+        }
+
+        private void TryInvokePrimitive(CommandIntent intent, NativeOrderPrimitive primitive)
+        {
+            Formation formation = intent.SourceFormation;
             if (formation == null)
             {
-                return false;
+                return;
             }
 
             try
             {
-                return formation.CountOfUnits > 0;
+                switch (primitive)
+                {
+                    case NativeOrderPrimitive.AdvanceOrMove:
+                        if (intent.TargetPosition.HasValue)
+                        {
+                            _nativePrimitives.ExecuteAdvanceOrMove(formation, intent.TargetPosition.Value);
+                        }
+
+                        break;
+                    case NativeOrderPrimitive.Charge:
+                        _nativePrimitives.ExecuteCharge(formation);
+                        break;
+                    case NativeOrderPrimitive.HoldOrReform:
+                        if (!intent.TargetPosition.HasValue)
+                        {
+                            break;
+                        }
+
+                        _nativePrimitives.ExecuteHoldOrReform(formation, intent.TargetPosition.Value);
+                        break;
+                }
             }
             catch
             {
-                return false;
+                // Executor already defensive; never throw to callers.
+            }
+        }
+
+        private static void MapPrimitives(
+            CommandIntent intent,
+            out NativeOrderPrimitive primitive,
+            out bool requiresCavalrySequence,
+            out bool requiresNative)
+        {
+            requiresCavalrySequence = false;
+            requiresNative = false;
+            primitive = NativeOrderPrimitive.None;
+
+            switch (intent.Type)
+            {
+                case CommandType.AdvanceOrMove:
+                    primitive = NativeOrderPrimitive.AdvanceOrMove;
+                    requiresNative = intent.TargetPosition.HasValue;
+                    break;
+                case CommandType.Charge:
+                    primitive = NativeOrderPrimitive.Charge;
+                    requiresNative = true;
+                    break;
+                case CommandType.BasicHold:
+                case CommandType.Reform:
+                    primitive = NativeOrderPrimitive.HoldOrReform;
+                    requiresNative = true;
+                    break;
+                case CommandType.NativeCavalryChargeSequence:
+                    requiresCavalrySequence = true;
+                    primitive = NativeOrderPrimitive.Charge;
+                    requiresNative = true;
+                    break;
+                default:
+                    primitive = NativeOrderPrimitive.None;
+                    requiresNative = false;
+                    break;
             }
         }
 
@@ -132,12 +221,6 @@ namespace Bannerlord.RTSCameraLite.Commands
             return !(float.IsNaN(v.x) || float.IsInfinity(v.x)
                 || float.IsNaN(v.y) || float.IsInfinity(v.y)
                 || float.IsNaN(v.z) || float.IsInfinity(v.z));
-        }
-
-        private static bool IsFiniteVec2(Vec2 v)
-        {
-            return !(float.IsNaN(v.x) || float.IsInfinity(v.x)
-                || float.IsNaN(v.y) || float.IsInfinity(v.y));
         }
     }
 }
