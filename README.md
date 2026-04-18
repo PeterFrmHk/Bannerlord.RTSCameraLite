@@ -8,9 +8,11 @@
 
 ## What the mod does (today)
 
-- **Slice 1 (current compile):** Loads as a single-player Bannerlord module with **foundation only** — `SubModule` logging and **no mission behaviors** registered. See `docs/slices/slice-1-foundation.md`.
-- **Later slices (sources present, not in Slice 1 build):** RTS-style mission camera path, tactical command validation/issuance, JSON config — re-enabled when the csproj compile list is expanded.
+- **Default install:** **Load-safe foundation** — the module loads, logs startup, and **does not attach mission runtime** unless you opt in. Mission code (`CommanderMissionView`, doctrine, camera shell, diagnostics, etc.) ships in the DLL but stays **dormant** when `EnableMissionRuntimeHooks` is `false` in `config/commander_config.json` (the shipped default).
+- **Experimental / unverified:** Commander doctrine, RTS camera bridge, native-order routing, markers, and diagnostics are **candidate** behaviors — present in source and gated by config flags; treat as **not in-game verified** unless you complete the relevant manual checklists with a sign-off.
 - Ships **research and slice audits** under `docs/` so engine integration stays explicit and version-aware.
+
+**Deploy / install:** Use **`docs/deploy.md`** (package + audit + optional deploy scripts) or **`docs/install.md`** (manual copy checklist). Do **not** copy only the main DLL — copy the **entire** `bin/Win64_Shipping_Client` output from the build. Scripts: `scripts/package-module.ps1`, `scripts/audit-steam-deployment.ps1` (read-only), `scripts/deploy-to-steam.ps1` (optional; backs up existing module). Research: `docs/research/public-deployment-scan.md`, `docs/research/local-steam-mod-scan.md`.
 
 ## Why it exists
 
@@ -18,8 +20,8 @@ Bannerlord’s battles excel at spectacle and melee chaos, but **commander fanta
 
 ## Current status
 
-- **Playable / engineering slices:** Foundation through **native order execution**, **ground targeting**, and **minimal command feedback** are in active development; see `docs/slice-roadmap.md` and `docs/slices/README.md` for the honest split between **shipped behavior** and **planned doctrine**.
-- **Doctrine slices** (default RTS entry, Backspace policy, commander nucleus, rally/absorption, cavalry sequence): **planned**—documented in design and architecture files, not claimed as finished gameplay.
+- **Shipped in repo** means **code present**, not “proven in your build” unless a manual checklist is completed. **Default config** keeps **mission hooks off**, **commander mode auto-start off**, and **doctrine / diagnostics / router / markers / native-order paths off** until you enable them deliberately.
+- See `docs/slice-roadmap.md` and `docs/slices/README.md` for **shipped vs planned** doctrine work (default RTS battle entry remains a **design target**, not the default runtime).
 - **Display name** in `SubModule.xml` is **RTS Commander Doctrine** (v0.1.0-slice1); legacy short name remains in `ModConstants.LegacyShortName` for logs.
 
 ## Feature pillars (target)
@@ -45,11 +47,13 @@ Demonstrate **systems design + native engine integration + disciplined iteration
 
 | Path | Role |
 | --- | --- |
-| `src/` | C# gameplay and integration code (not modified in Slice P1). |
+| `src/` | C# gameplay and integration code (explicit compile list in `.csproj`). |
 | `config/` | Default JSON profile (keys, camera). |
 | `docs/` | Design, architecture, roadmap, audits, hiring case study, media plan. |
 | `docs/research/` | Base-game and installed-mod research; local DLLs are authority. |
 | `docs/slices/` | Slice methodology index (links to slice audits and checklists). |
+| `docs/install.md`, `docs/deploy.md` | Manual install vs scripted package/audit/deploy. |
+| `scripts/` | `package-module.ps1`, `audit-steam-deployment.ps1`, `deploy-to-steam.ps1`. |
 | `SubModule.xml` | Module metadata for the Bannerlord launcher. |
 | `bin/Win64_Shipping_Client/` | Build output (local). |
 
