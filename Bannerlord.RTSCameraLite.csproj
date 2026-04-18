@@ -52,6 +52,10 @@
     <Compile Include="src\Camera\CommanderCameraController.cs" />
     <Compile Include="src\Camera\CommanderCameraMovementSettings.cs" />
     <Compile Include="src\Config\CommanderConfig.cs" />
+    <Compile Include="src\Config\CommanderConfigSchema.cs" />
+    <Compile Include="src\Config\CommanderConfigValidationResult.cs" />
+    <Compile Include="src\Config\CommanderConfigMigration.cs" />
+    <Compile Include="src\Config\CommanderConfigValidator.cs" />
     <Compile Include="src\Config\CommanderConfigDefaults.cs" />
     <Compile Include="src\Config\CommanderConfigService.cs" />
     <Compile Include="src\Config\ConfigLoadResult.cs" />

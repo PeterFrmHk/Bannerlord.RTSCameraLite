@@ -5,6 +5,9 @@ namespace Bannerlord.RTSCameraLite.Config
     /// </summary>
     public sealed class CommanderConfig
     {
+        /// <summary>On-disk migration stamp (Slice 23). Older files omit this key and are treated as version 0 until migration.</summary>
+        public int ConfigFileVersion { get; set; }
+
         public bool StartBattlesInCommanderMode { get; set; }
 
         public string ModeActivationKey { get; set; } = string.Empty;

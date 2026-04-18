@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using Bannerlord.RTSCameraLite.Core;
@@ -16,6 +17,11 @@ namespace Bannerlord.RTSCameraLite.Config
             PropertyNameCaseInsensitive = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
             AllowTrailingCommas = true
+        };
+
+        private static readonly JsonSerializerOptions WriteJsonOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true
         };
 
         public static ConfigLoadResult LoadOrCreate()
@@ -64,14 +70,16 @@ namespace Bannerlord.RTSCameraLite.Config
                 CommanderConfig defaults = CommanderConfigDefaults.CreateDefault();
                 try
                 {
-                    WriteConfig(configPath, defaults);
+                    CommanderConfigValidationResult createdValidation = CommanderConfigValidator.Validate(defaults, defaults);
+                    WriteConfig(configPath, createdValidation.SanitizedConfig);
                     ModLogger.LogDebug($"{ModConstants.ModuleId}: created default {configPath}");
                     return new ConfigLoadResult(
                         loaded: true,
                         usedDefaults: false,
                         createdDefaultFile: true,
                         message: "Created default commander_config.json",
-                        defaults);
+                        createdValidation.SanitizedConfig,
+                        createdValidation);
                 }
                 catch (Exception ex)
                 {
@@ -114,12 +122,15 @@ namespace Bannerlord.RTSCameraLite.Config
                 ApplyOmittedSlice19CommandMarkerDefaults(json, parsed);
                 ApplyOmittedSlice20DiagnosticsDefaults(json, parsed);
 
+                CommanderConfig defaults = CommanderConfigDefaults.CreateDefault();
+                CommanderConfigValidationResult validation = FinalizeLoadedConfig(configPath, json, parsed, defaults);
                 return new ConfigLoadResult(
                     loaded: true,
                     usedDefaults: false,
                     createdDefaultFile: false,
                     message: "OK",
-                    parsed);
+                    validation.SanitizedConfig,
+                    validation);
             }
             catch (Exception ex)
             {
@@ -867,9 +878,75 @@ namespace Bannerlord.RTSCameraLite.Config
             return Path.Combine(moduleRoot, CommanderConfigDefaults.RelativeConfigPath);
         }
 
+        private static CommanderConfigValidationResult FinalizeLoadedConfig(
+            string path,
+            string rawJson,
+            CommanderConfig parsed,
+            CommanderConfig defaults)
+        {
+            CommanderConfigMigration.MigrationOutcome migration = CommanderConfigMigration.Apply(rawJson, parsed, defaults);
+            CommanderConfigValidationResult validation = CommanderConfigValidator.Validate(parsed, defaults);
+            var mergedWarnings = new List<string>(migration.Warnings.Count + validation.Warnings.Count);
+            mergedWarnings.AddRange(migration.Warnings);
+            mergedWarnings.AddRange(validation.Warnings);
+            bool requiresRewrite = validation.RequiresRewrite || migration.NeedsPersist;
+            var combined = new CommanderConfigValidationResult(
+                validation.IsValid,
+                validation.UsedFallbacks,
+                requiresRewrite,
+                mergedWarnings,
+                validation.Errors,
+                validation.SanitizedConfig);
+
+            LogValidationMessages(combined);
+            TryRewriteSanitizedConfig(path, combined);
+            return combined;
+        }
+
+        private static void LogValidationMessages(CommanderConfigValidationResult result)
+        {
+            const int maxLines = 24;
+            int i = 0;
+            foreach (string w in result.Warnings)
+            {
+                if (i++ >= maxLines)
+                {
+                    ModLogger.Warn($"{ModConstants.ModuleId}: config validation: additional warnings omitted ({result.Warnings.Count - maxLines}).");
+                    break;
+                }
+
+                ModLogger.Warn($"{ModConstants.ModuleId}: config validation: {w}");
+            }
+
+            foreach (string e in result.Errors)
+            {
+                ModLogger.Warn($"{ModConstants.ModuleId}: config validation error: {e}");
+            }
+        }
+
+        private static void TryRewriteSanitizedConfig(string path, CommanderConfigValidationResult result)
+        {
+            if (!result.RequiresRewrite || string.IsNullOrEmpty(path))
+            {
+                return;
+            }
+
+            try
+            {
+                WriteConfig(path, result.SanitizedConfig);
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: wrote sanitized commander_config.json ({path})");
+            }
+            catch (Exception ex)
+            {
+                ModLogger.LogWarningOnce(
+                    "commander_config_rewrite",
+                    $"{ModConstants.ModuleId}: could not rewrite sanitized config ({ex.Message}).");
+            }
+        }
+
         private static void WriteConfig(string path, CommanderConfig config)
         {
-            string json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
+            string json = JsonSerializer.Serialize(config, WriteJsonOptions);
             File.WriteAllText(path, json);
         }
     }

@@ -16,6 +16,7 @@ namespace Bannerlord.RTSCameraLite.Config
         {
             return new CommanderConfig
             {
+                ConfigFileVersion = CommanderConfigSchema.CurrentConfigVersion,
                 StartBattlesInCommanderMode = true,
                 ModeActivationKey = "Backspace",
                 OverrideNativeBackspaceOrders = true,

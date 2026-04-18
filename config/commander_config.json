@@ -1,4 +1,5 @@
 {
+  "ConfigFileVersion": 1,
   "StartBattlesInCommanderMode": true,
   "ModeActivationKey": "Backspace",
   "OverrideNativeBackspaceOrders": true,

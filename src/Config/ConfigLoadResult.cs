@@ -1,7 +1,7 @@
 namespace Bannerlord.RTSCameraLite.Config
 {
     /// <summary>
-    /// Outcome of loading <see cref="CommanderConfig"/> from disk (Slice 6).
+    /// Outcome of loading <see cref="CommanderConfig"/> from disk (Slice 6), including optional Slice 23 validation metadata.
     /// </summary>
     public sealed class ConfigLoadResult
     {
@@ -10,13 +10,15 @@ namespace Bannerlord.RTSCameraLite.Config
             bool usedDefaults,
             bool createdDefaultFile,
             string message,
-            CommanderConfig config)
+            CommanderConfig config,
+            CommanderConfigValidationResult validation = null)
         {
             Loaded = loaded;
             UsedDefaults = usedDefaults;
             CreatedDefaultFile = createdDefaultFile;
             Message = message ?? string.Empty;
             Config = config ?? CommanderConfigDefaults.CreateDefault();
+            Validation = validation;
         }
 
         public bool Loaded { get; }
@@ -28,5 +30,8 @@ namespace Bannerlord.RTSCameraLite.Config
         public string Message { get; }
 
         public CommanderConfig Config { get; }
+
+        /// <summary>Populated when Slice 23 validation ran for a deserialized config; otherwise null.</summary>
+        public CommanderConfigValidationResult Validation { get; }
     }
 }
