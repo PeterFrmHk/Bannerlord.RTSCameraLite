@@ -213,5 +213,47 @@ namespace Bannerlord.RTSCameraLite.UX
                 $"[Marker] {commandType} issued (no map pin for this order type).",
                 allowUi: true);
         }
+
+        /// <summary>
+        /// Slice 19: text fallback when optional world visuals are disabled or fail (throttled per type/source).
+        /// </summary>
+        public void ShowCommandMarkerFallback(CommandMarkerType type, Vec3 position, string label, string source)
+        {
+            string key = "slice19-marker-" + type + "-" + (source ?? string.Empty);
+            if (!_throttle.TryAllow(key, 0.35, forceImmediate: false))
+            {
+                return;
+            }
+
+            string lab = string.IsNullOrEmpty(label) ? string.Empty : $" {label}";
+            string src = string.IsNullOrEmpty(source) ? string.Empty : $" [{source}]";
+            bool hasPosition = !(float.IsNaN(position.x) || float.IsInfinity(position.x)
+                || float.IsNaN(position.y) || float.IsInfinity(position.y)
+                || float.IsNaN(position.z) || float.IsInfinity(position.z))
+                && (position.x * position.x + position.y * position.y + position.z * position.z > 0.0001f);
+
+            string body = hasPosition
+                ? $"@ ({position.x:0.#},{position.y:0.#},{position.z:0.#})"
+                : "(no position)";
+            ModLogger.PlayerMessage($"[Marker] {type}{lab} {body}{src}", allowUi: true);
+        }
+
+        /// <summary>
+        /// Slice 20 — compact formation / doctrine diagnostics (throttled; no overlay dependency).
+        /// </summary>
+        public void ShowDiagnosticsSummary(string message, double cooldownSeconds, bool forceImmediate)
+        {
+            if (string.IsNullOrEmpty(message))
+            {
+                return;
+            }
+
+            if (!_throttle.TryAllow("diagnostics-summary", cooldownSeconds, forceImmediate))
+            {
+                return;
+            }
+
+            ModLogger.PlayerMessage("[Diag] " + message, allowUi: true);
+        }
     }
 }

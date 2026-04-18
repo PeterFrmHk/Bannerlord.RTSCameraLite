@@ -14,6 +14,21 @@ namespace Bannerlord.RTSCameraLite.Tactical
 
         public GroundTargetResult TryResolveFromCamera(
             TaleWorlds.MountAndBlade.Mission mission,
+            Vec3 cameraWorld,
+            float yawRadians,
+            float pitchDegrees,
+            float forwardDistance = TerrainProjectionService.DefaultForwardDistance)
+        {
+            return _terrain.TryProjectCameraForwardGround(
+                mission,
+                cameraWorld,
+                yawRadians,
+                pitchDegrees,
+                forwardDistance);
+        }
+
+        public GroundTargetResult TryResolveFromCamera(
+            TaleWorlds.MountAndBlade.Mission mission,
             RTSCameraPose pose,
             float forwardDistance = TerrainProjectionService.DefaultForwardDistance)
         {
@@ -22,7 +37,7 @@ namespace Bannerlord.RTSCameraLite.Tactical
                 return GroundTargetResult.Failure("No camera pose.");
             }
 
-            return _terrain.TryProjectCameraForwardGround(
+            return TryResolveFromCamera(
                 mission,
                 pose.Position,
                 pose.Yaw,

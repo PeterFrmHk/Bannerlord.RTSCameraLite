@@ -1,30 +1,44 @@
-using Bannerlord.RTSCameraLite.Commands;
 using TaleWorlds.Library;
 
 namespace Bannerlord.RTSCameraLite.UX
 {
-    /// <summary>
-    /// Single active positional marker sample for minimal RTS feedback (slice 13).
-    /// </summary>
-    internal sealed class CommandMarkerState
+    /// <summary>One active temporary marker sample (Slice 19).</summary>
+    public sealed class CommandMarkerState
     {
-        public CommandMarkerState(Vec3 position, CommandType commandType, string label, float lifetimeSeconds)
+        public CommandMarkerState(
+            bool active,
+            CommandMarkerType type,
+            Vec3 position,
+            string label,
+            float remainingSeconds,
+            string source,
+            bool visualRendered,
+            string reason)
         {
+            Active = active;
+            Type = type;
             Position = position;
-            CommandType = commandType;
             Label = label ?? string.Empty;
-            RemainingSeconds = lifetimeSeconds;
-            Active = lifetimeSeconds > 0f;
+            RemainingSeconds = remainingSeconds;
+            Source = source ?? string.Empty;
+            VisualRendered = visualRendered;
+            Reason = reason ?? string.Empty;
         }
+
+        public bool Active { get; set; }
+
+        public CommandMarkerType Type { get; }
 
         public Vec3 Position { get; }
 
-        public CommandType CommandType { get; }
-
-        public float RemainingSeconds { get; internal set; }
-
         public string Label { get; }
 
-        public bool Active { get; internal set; }
+        public float RemainingSeconds { get; set; }
+
+        public string Source { get; }
+
+        public bool VisualRendered { get; }
+
+        public string Reason { get; }
     }
 }

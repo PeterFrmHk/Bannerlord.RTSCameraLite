@@ -108,5 +108,23 @@
   "CavalryUseNativeChargeCommand": true,
   "CavalryForwardToChargeDistance": 25.0,
   "EnableCavalrySequenceDebug": true,
+
+  "EnableCommandMarkers": true,
+  "EnableFallbackTextMarkers": true,
+  "DefaultMarkerLifetimeSeconds": 2.5,
+  "ChargeMarkerLifetimeSeconds": 3.0,
+  "ReformMarkerLifetimeSeconds": 3.0,
+  "MarkerRefreshThrottleSeconds": 0.25,
+
+  "EnableDiagnostics": true,
+  "ShowDiagnosticsInCommanderModeOnly": true,
+  "DiagnosticsToggleKey": "F9",
+  "DiagnosticsRefreshIntervalSeconds": 1.0,
+  "IncludeDoctrineScores": true,
+  "IncludeEligibility": true,
+  "IncludeRallyAbsorption": true,
+  "IncludeCavalrySequence": true,
+  "IncludeNativeOrderStatus": true,
+
   "CommandValidationDebugLogIntervalSeconds": 0.4
 }

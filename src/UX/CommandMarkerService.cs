@@ -1,124 +1,242 @@
 using System;
-using Bannerlord.RTSCameraLite.Commands;
+using System.Collections.Generic;
 using Bannerlord.RTSCameraLite.Core;
+using Bannerlord.RTSCameraLite.Tactical;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
 namespace Bannerlord.RTSCameraLite.UX
 {
     /// <summary>
-    /// Minimal positional command marker: optional one-shot particle burst (public mission API) plus throttled text fallback.
-    /// All optional visual uncertainty stays here; failures never propagate to callers.
+    /// Temporary world markers for command targets (Slice 19). Visual path is optional; failures fall back to text and never throw.
     /// </summary>
     internal sealed class CommandMarkerService
     {
         /// <summary>
-        /// Optional burst name for <see cref="TaleWorlds.MountAndBlade.Mission.AddParticleSystemBurstByName"/>.
-        /// Leave null to skip the burst path until verified for your build (see <c>docs/slice-13-audit.md</c>).
+        /// Optional particle name for <see cref="TaleWorlds.MountAndBlade.Mission.AddParticleSystemBurstByName"/>.
+        /// Leave null until Slice 0 research verifies a safe effect name for your build.
         /// </summary>
-        private const string OptionalMoveMarkerParticleName = null;
+        private const string OptionalMarkerParticleName = null;
 
+        private const int MaxMarkers = 16;
+
+        private readonly CommandMarkerSettings _settings;
         private readonly TacticalFeedbackService _tactical;
         private readonly Func<TaleWorlds.MountAndBlade.Mission> _getMission;
-
-        private CommandMarkerState _marker;
+        private readonly List<CommandMarkerState> _markers = new List<CommandMarkerState>();
+        private readonly Dictionary<CommandMarkerType, DateTime> _lastAddUtc = new Dictionary<CommandMarkerType, DateTime>();
 
         public CommandMarkerService(
+            CommandMarkerSettings settings,
             TacticalFeedbackService tactical,
             Func<TaleWorlds.MountAndBlade.Mission> getMission)
         {
-            _tactical = tactical ?? throw new ArgumentNullException(nameof(tactical));
-            _getMission = getMission ?? throw new ArgumentNullException(nameof(getMission));
+            _settings = settings ?? CommandMarkerSettings.FromConfig(null);
+            _tactical = tactical;
+            _getMission = getMission ?? (() => null);
         }
 
-        /// <summary>
-        /// Replaces any active marker with a new one at <paramref name="position"/>.
-        /// </summary>
-        public void AddMarker(Vec3 position, CommandType commandType, string label)
+        public void AddMarker(CommandMarkerType type, Vec3 position, string label, string source)
         {
             try
             {
-                _marker = new CommandMarkerState(
-                    position,
-                    commandType,
-                    label,
-                    MarkerLifetime.DefaultSeconds);
+                if (!_settings.EnableCommandMarkers)
+                {
+                    return;
+                }
+
+                if (!IsFiniteVec3(position))
+                {
+                    return;
+                }
+
+                DateTime now = DateTime.UtcNow;
+                if (_lastAddUtc.TryGetValue(type, out DateTime last)
+                    && (now - last).TotalSeconds < _settings.MarkerRefreshThrottleSeconds)
+                {
+                    return;
+                }
+
+                _lastAddUtc[type] = now;
 
                 TaleWorlds.MountAndBlade.Mission mission = _getMission();
-                bool burstAttempted = false;
-                bool burstOk = false;
-                if (!string.IsNullOrEmpty(OptionalMoveMarkerParticleName)
-                    && mission != null
-                    && !mission.MissionEnded)
+                MarkerRenderResult render = TryRenderVisual(mission, position, type);
+                bool visualOk = render.VisualRendered;
+
+                if (!visualOk && _settings.EnableFallbackTextMarkers && _tactical != null)
                 {
-                    burstAttempted = true;
-                    burstOk = TryParticleBurst(mission, position);
+                    _tactical.ShowCommandMarkerFallback(type, position, label, source);
                 }
 
-                if (!burstAttempted || !burstOk)
-                {
-                    _tactical.ShowPositionalMarkerFallback(position, commandType, label);
-                }
+                float life = MarkerLifetime.Resolve(type, _settings);
+                _markers.Add(
+                    new CommandMarkerState(
+                        active: true,
+                        type: type,
+                        position: position,
+                        label: label,
+                        remainingSeconds: life,
+                        source: source ?? string.Empty,
+                        visualRendered: visualOk,
+                        reason: render.Reason));
+
+                TrimExcessMarkers();
             }
             catch (Exception ex)
             {
-                ModLogger.LogDebug($"CommandMarkerService.AddMarker swallowed: {ex.Message}");
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: CommandMarkerService.AddMarker suppressed ({ex.Message})");
             }
         }
 
-        /// <summary>
-        /// Advances marker lifetime; must run on the mission tick.
-        /// </summary>
+        public void AddGroundTargetMarker(GroundTargetResult target)
+        {
+            try
+            {
+                if (!target.Success)
+                {
+                    if (_settings.EnableCommandMarkers
+                        && _settings.EnableFallbackTextMarkers
+                        && _tactical != null)
+                    {
+                        _tactical.ShowCommandMarkerFallback(
+                            CommandMarkerType.GroundTarget,
+                            Vec3.Zero,
+                            "Ground",
+                            "ground-target-failed: " + target.Message);
+                    }
+
+                    return;
+                }
+
+                AddMarker(CommandMarkerType.GroundTarget, target.Position, "Ground", "ground-target");
+            }
+            catch (Exception ex)
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: AddGroundTargetMarker suppressed ({ex.Message})");
+            }
+        }
+
+        public void AddChargeTargetMarker(FormationTargetResult target)
+        {
+            try
+            {
+                if (!target.Success || !IsFiniteVec3(target.Position))
+                {
+                    return;
+                }
+
+                AddMarker(CommandMarkerType.ChargeTarget, target.Position, "Charge", "cavalry-charge-target");
+            }
+            catch (Exception ex)
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: AddChargeTargetMarker suppressed ({ex.Message})");
+            }
+        }
+
+        public void AddReformMarker(Vec3 position)
+        {
+            try
+            {
+                AddMarker(CommandMarkerType.ReformPoint, position, "Reform", "cavalry-reform");
+            }
+            catch (Exception ex)
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: AddReformMarker suppressed ({ex.Message})");
+            }
+        }
+
         public void Tick(float dt)
         {
             try
             {
-                if (_marker == null || !_marker.Active)
+                if (dt <= 0f || _markers.Count == 0)
                 {
                     return;
                 }
 
-                float next = _marker.RemainingSeconds - dt;
-                if (next <= 0f)
+                for (int i = _markers.Count - 1; i >= 0; i--)
                 {
-                    _marker.RemainingSeconds = 0f;
-                    _marker.Active = false;
-                    _marker = null;
-                    return;
-                }
+                    CommandMarkerState m = _markers[i];
+                    if (!m.Active)
+                    {
+                        _markers.RemoveAt(i);
+                        continue;
+                    }
 
-                _marker.RemainingSeconds = next;
+                    float next = m.RemainingSeconds - dt;
+                    if (next <= 0f)
+                    {
+                        m.Active = false;
+                        m.RemainingSeconds = 0f;
+                        _markers.RemoveAt(i);
+                    }
+                    else
+                    {
+                        m.RemainingSeconds = next;
+                    }
+                }
             }
             catch (Exception ex)
             {
-                ModLogger.LogDebug($"CommandMarkerService.Tick swallowed: {ex.Message}");
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: CommandMarkerService.Tick suppressed ({ex.Message})");
             }
         }
 
-        public void Clear()
-        {
-            _marker = null;
-        }
-
-        private static bool TryParticleBurst(TaleWorlds.MountAndBlade.Mission mission, Vec3 position)
+        public void Cleanup()
         {
             try
             {
-                if (mission == null)
+                _markers.Clear();
+                _lastAddUtc.Clear();
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
+        private void TrimExcessMarkers()
+        {
+            while (_markers.Count > MaxMarkers)
+            {
+                _markers.RemoveAt(0);
+            }
+        }
+
+        private static MarkerRenderResult TryRenderVisual(
+            TaleWorlds.MountAndBlade.Mission mission,
+            Vec3 position,
+            CommandMarkerType type)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(OptionalMarkerParticleName))
                 {
-                    return false;
+                    return MarkerRenderResult.Skipped("no particle name configured (Slice 0)");
+                }
+
+                if (mission == null || mission.MissionEnded)
+                {
+                    return MarkerRenderResult.Skipped("mission unavailable");
                 }
 
                 Mat3 rot = Mat3.Identity;
                 MatrixFrame frame = new MatrixFrame(rot, position);
-                mission.AddParticleSystemBurstByName(OptionalMoveMarkerParticleName, frame, false);
-                return true;
+                mission.AddParticleSystemBurstByName(OptionalMarkerParticleName, frame, false);
+                _ = type;
+                return MarkerRenderResult.VisualOk("particle burst issued");
             }
             catch (Exception ex)
             {
-                ModLogger.LogDebug($"Marker particle burst skipped: {ex.Message}");
-                return false;
+                return MarkerRenderResult.Skipped("visual: " + ex.Message);
             }
+        }
+
+        private static bool IsFiniteVec3(Vec3 v)
+        {
+            return !(float.IsNaN(v.x) || float.IsInfinity(v.x)
+                || float.IsNaN(v.y) || float.IsInfinity(v.y)
+                || float.IsNaN(v.z) || float.IsInfinity(v.z));
         }
     }
 }

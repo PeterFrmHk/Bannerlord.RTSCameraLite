@@ -11,7 +11,7 @@
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
     <FileVersion>0.1.0.0</FileVersion>
-    <InformationalVersion>0.1.0-slice16</InformationalVersion>
+    <InformationalVersion>0.1.0-slice19</InformationalVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -19,12 +19,17 @@
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
   </PropertyGroup>
 
-  <!-- Slice 10 doctrine; Slice 11 eligibility; Slice 12 rally/layout; Slice 13 cavalry doctrine; Slice 14 native order executor; Slice 15 command router; Slice 16 native cavalry orchestrator. -->
+  <!-- Slice 10 doctrine; Slice 11 eligibility; Slice 12 rally/layout; Slice 13 cavalry doctrine; Slice 14 native order executor; Slice 15 command router; Slice 16 native cavalry orchestrator; Slice 19 command markers; Slice 20 diagnostics. -->
   <ItemGroup>
     <Compile Remove="src\**\*.cs" />
     <Compile Include="src\SubModule.cs" />
     <Compile Include="src\Core\ModConstants.cs" />
     <Compile Include="src\Core\ModLogger.cs" />
+    <Compile Include="src\Diagnostics\DiagnosticsSettings.cs" />
+    <Compile Include="src\Diagnostics\DiagnosticsThrottle.cs" />
+    <Compile Include="src\Diagnostics\FormationDiagnosticsSnapshot.cs" />
+    <Compile Include="src\Diagnostics\FormationDiagnosticsFormatter.cs" />
+    <Compile Include="src\Diagnostics\CommanderDiagnosticsService.cs" />
     <Compile Include="src\Mission\CommanderMissionModeGate.cs" />
     <Compile Include="src\Mission\CommanderMissionView.cs" />
     <Compile Include="src\Mission\CommanderModeState.cs" />
@@ -43,6 +48,7 @@
     <Compile Include="src\Adapters\BackspaceConflictGuard.cs" />
     <Compile Include="src\Adapters\BackspaceConflictResult.cs" />
     <Compile Include="src\Camera\CommanderCameraPose.cs" />
+    <Compile Include="src\Camera\RTSCameraPose.cs" />
     <Compile Include="src\Camera\CommanderCameraController.cs" />
     <Compile Include="src\Camera\CommanderCameraMovementSettings.cs" />
     <Compile Include="src\Config\CommanderConfig.cs" />
@@ -99,7 +105,25 @@
     <Compile Include="src\Commands\CommandContext.cs" />
     <Compile Include="src\Commands\CommandValidationResult.cs" />
     <Compile Include="src\Commands\CommandExecutionDecision.cs" />
+    <Compile Include="src\Commands\CommandExecutionResult.cs" />
     <Compile Include="src\Commands\CommandRouter.cs" />
+    <Compile Include="src\Tactical\GroundTargetResult.cs" />
+    <Compile Include="src\Tactical\FormationTargetResult.cs" />
+    <Compile Include="src\Tactical\TerrainProjectionService.cs" />
+    <Compile Include="src\Tactical\GroundTargetResolver.cs" />
+    <Compile Include="src\UX\FeedbackThrottle.cs" />
+    <Compile Include="src\UX\TacticalFeedbackService.cs" />
+    <Compile Include="src\UX\CommandMarkerType.cs" />
+    <Compile Include="src\UX\CommandMarkerState.cs" />
+    <Compile Include="src\UX\CommandMarkerSettings.cs" />
+    <Compile Include="src\UX\MarkerLifetime.cs" />
+    <Compile Include="src\UX\MarkerRenderResult.cs" />
+    <Compile Include="src\UX\CommandMarkerService.cs" />
+    <Compile Include="src\Diagnostics\DiagnosticsSettings.cs" />
+    <Compile Include="src\Diagnostics\DiagnosticsThrottle.cs" />
+    <Compile Include="src\Diagnostics\FormationDiagnosticsSnapshot.cs" />
+    <Compile Include="src\Diagnostics\FormationDiagnosticsFormatter.cs" />
+    <Compile Include="src\Diagnostics\CommanderDiagnosticsService.cs" />
   </ItemGroup>
 
   <ItemGroup>

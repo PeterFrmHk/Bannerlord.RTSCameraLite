@@ -239,6 +239,40 @@ namespace Bannerlord.RTSCameraLite.Config
 
         public bool EnableCavalrySequenceDebug { get; set; }
 
+        // Slice 19 — temporary command markers (optional visuals + text fallback).
+
+        public bool EnableCommandMarkers { get; set; }
+
+        public bool EnableFallbackTextMarkers { get; set; }
+
+        public float DefaultMarkerLifetimeSeconds { get; set; }
+
+        public float ChargeMarkerLifetimeSeconds { get; set; }
+
+        public float ReformMarkerLifetimeSeconds { get; set; }
+
+        public float MarkerRefreshThrottleSeconds { get; set; }
+
+        // Slice 20 — portfolio / capture diagnostics (text feedback only).
+
+        public bool EnableDiagnostics { get; set; }
+
+        public bool ShowDiagnosticsInCommanderModeOnly { get; set; }
+
+        public string DiagnosticsToggleKey { get; set; } = string.Empty;
+
+        public float DiagnosticsRefreshIntervalSeconds { get; set; }
+
+        public bool IncludeDoctrineScores { get; set; }
+
+        public bool IncludeEligibility { get; set; }
+
+        public bool IncludeRallyAbsorption { get; set; }
+
+        public bool IncludeCavalrySequence { get; set; }
+
+        public bool IncludeNativeOrderStatus { get; set; }
+
         /// <summary>Minimum seconds between debug validation log lines (Slice 15).</summary>
         public float CommandValidationDebugLogIntervalSeconds { get; set; }
     }

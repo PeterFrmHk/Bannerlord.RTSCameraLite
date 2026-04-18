@@ -115,6 +115,21 @@ namespace Bannerlord.RTSCameraLite.Config
                 CavalryUseNativeChargeCommand = true,
                 CavalryForwardToChargeDistance = 25.0f,
                 EnableCavalrySequenceDebug = true,
+                EnableCommandMarkers = true,
+                EnableFallbackTextMarkers = true,
+                DefaultMarkerLifetimeSeconds = 2.5f,
+                ChargeMarkerLifetimeSeconds = 3.0f,
+                ReformMarkerLifetimeSeconds = 3.0f,
+                MarkerRefreshThrottleSeconds = 0.25f,
+                EnableDiagnostics = true,
+                ShowDiagnosticsInCommanderModeOnly = true,
+                DiagnosticsToggleKey = "F9",
+                DiagnosticsRefreshIntervalSeconds = 1.0f,
+                IncludeDoctrineScores = true,
+                IncludeEligibility = true,
+                IncludeRallyAbsorption = true,
+                IncludeCavalrySequence = true,
+                IncludeNativeOrderStatus = true,
                 CommandValidationDebugLogIntervalSeconds = 0.4f
             };
         }

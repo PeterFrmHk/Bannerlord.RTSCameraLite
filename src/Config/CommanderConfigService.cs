@@ -111,6 +111,8 @@ namespace Bannerlord.RTSCameraLite.Config
                 ApplyOmittedSlice15CommandRouterDefaults(json, parsed);
                 CommanderConfigDefaults.HarmonizeLegacyCommandRouterFields(parsed);
                 ApplyOmittedSlice16NativeCavalrySequenceDefaults(json, parsed);
+                ApplyOmittedSlice19CommandMarkerDefaults(json, parsed);
+                ApplyOmittedSlice20DiagnosticsDefaults(json, parsed);
 
                 return new ConfigLoadResult(
                     loaded: true,
@@ -600,6 +602,127 @@ namespace Bannerlord.RTSCameraLite.Config
                 if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableCavalrySequenceDebug)))
                 {
                     parsed.EnableCavalrySequenceDebug = d.EnableCavalrySequenceDebug;
+                }
+            }
+            catch
+            {
+                // Ignore merge failures.
+            }
+        }
+
+        private static void ApplyOmittedSlice20DiagnosticsDefaults(string json, CommanderConfig parsed)
+        {
+            if (parsed == null || string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            try
+            {
+                using JsonDocument doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                JsonElement root = doc.RootElement;
+                CommanderConfig d = CommanderConfigDefaults.CreateDefault();
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableDiagnostics)))
+                {
+                    parsed.EnableDiagnostics = d.EnableDiagnostics;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.ShowDiagnosticsInCommanderModeOnly)))
+                {
+                    parsed.ShowDiagnosticsInCommanderModeOnly = d.ShowDiagnosticsInCommanderModeOnly;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.DiagnosticsToggleKey)))
+                {
+                    parsed.DiagnosticsToggleKey = d.DiagnosticsToggleKey;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.DiagnosticsRefreshIntervalSeconds)))
+                {
+                    parsed.DiagnosticsRefreshIntervalSeconds = d.DiagnosticsRefreshIntervalSeconds;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.IncludeDoctrineScores)))
+                {
+                    parsed.IncludeDoctrineScores = d.IncludeDoctrineScores;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.IncludeEligibility)))
+                {
+                    parsed.IncludeEligibility = d.IncludeEligibility;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.IncludeRallyAbsorption)))
+                {
+                    parsed.IncludeRallyAbsorption = d.IncludeRallyAbsorption;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.IncludeCavalrySequence)))
+                {
+                    parsed.IncludeCavalrySequence = d.IncludeCavalrySequence;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.IncludeNativeOrderStatus)))
+                {
+                    parsed.IncludeNativeOrderStatus = d.IncludeNativeOrderStatus;
+                }
+            }
+            catch
+            {
+                // Ignore merge failures.
+            }
+        }
+
+        private static void ApplyOmittedSlice19CommandMarkerDefaults(string json, CommanderConfig parsed)
+        {
+            if (parsed == null || string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            try
+            {
+                using JsonDocument doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                JsonElement root = doc.RootElement;
+                CommanderConfig d = CommanderConfigDefaults.CreateDefault();
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableCommandMarkers)))
+                {
+                    parsed.EnableCommandMarkers = d.EnableCommandMarkers;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableFallbackTextMarkers)))
+                {
+                    parsed.EnableFallbackTextMarkers = d.EnableFallbackTextMarkers;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.DefaultMarkerLifetimeSeconds)))
+                {
+                    parsed.DefaultMarkerLifetimeSeconds = d.DefaultMarkerLifetimeSeconds;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.ChargeMarkerLifetimeSeconds)))
+                {
+                    parsed.ChargeMarkerLifetimeSeconds = d.ChargeMarkerLifetimeSeconds;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.ReformMarkerLifetimeSeconds)))
+                {
+                    parsed.ReformMarkerLifetimeSeconds = d.ReformMarkerLifetimeSeconds;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.MarkerRefreshThrottleSeconds)))
+                {
+                    parsed.MarkerRefreshThrottleSeconds = d.MarkerRefreshThrottleSeconds;
                 }
             }
             catch

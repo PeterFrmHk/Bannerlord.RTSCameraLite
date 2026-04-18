@@ -7,9 +7,12 @@ using Bannerlord.RTSCameraLite.Commander;
 using Bannerlord.RTSCameraLite.Commands;
 using Bannerlord.RTSCameraLite.Config;
 using Bannerlord.RTSCameraLite.Core;
+using Bannerlord.RTSCameraLite.Diagnostics;
 using Bannerlord.RTSCameraLite.Doctrine;
 using Bannerlord.RTSCameraLite.Equipment;
 using Bannerlord.RTSCameraLite.Input;
+using Bannerlord.RTSCameraLite.Tactical;
+using Bannerlord.RTSCameraLite.UX;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
@@ -65,6 +68,12 @@ namespace Bannerlord.RTSCameraLite.Mission
         private readonly Dictionary<Formation, NativeCavalrySequenceLogState> _cavalryNativeSeqTransitionLog =
             new Dictionary<Formation, NativeCavalrySequenceLogState>();
         private float _secondsSinceCommandValidationLog;
+        private readonly CommanderDiagnosticsService _commanderDiagnosticsService = new CommanderDiagnosticsService();
+        private FeedbackThrottle _feedbackThrottle;
+        private TacticalFeedbackService _tacticalFeedback;
+        private CommandMarkerService _commandMarkerService;
+        private GroundTargetResolver _groundTargetResolver;
+        private float _groundTargetMarkerAccum;
 
         private sealed class NativeCavalrySequenceLogState
         {
@@ -137,6 +146,14 @@ namespace Bannerlord.RTSCameraLite.Mission
                 _cavalrySequenceRegistry);
             _cavalryNativeSequenceAccum = CavalryNativeSequenceTickIntervalSeconds;
             _secondsSinceCommandValidationLog = 0f;
+            _feedbackThrottle = new FeedbackThrottle();
+            _tacticalFeedback = new TacticalFeedbackService(_feedbackThrottle);
+            _commandMarkerService = new CommandMarkerService(
+                CommandMarkerSettings.FromConfig(_commanderConfig),
+                _tacticalFeedback,
+                () => Mission);
+            _groundTargetResolver = new GroundTargetResolver();
+            _groundTargetMarkerAccum = 0f;
             LogShellActiveOnce();
             LogEnabledTransition();
         }
@@ -162,6 +179,8 @@ namespace Bannerlord.RTSCameraLite.Mission
             MaybeScanRallyAbsorption(dt);
             MaybeEvaluateCavalryDoctrine(dt);
             MaybeTickNativeCavalryChargeSequences(dt);
+            MaybeTickCommandMarkers(dt);
+            MaybeDiagnostics(dt);
 
             bool toggle = _commanderInput.TryConsumeCommanderModeToggle(Input);
             if (!toggle)
@@ -585,6 +604,7 @@ namespace Bannerlord.RTSCameraLite.Mission
                             {
                                 logState.LoggedReformReady = true;
                                 ModLogger.LogDebug($"{ModConstants.ModuleId}: Cavalry reform ready.");
+                                MaybeShowReformPointMarker(formation);
                             }
 
                             if (state.CurrentState == CavalryChargeState.Reassembled
@@ -612,6 +632,85 @@ namespace Bannerlord.RTSCameraLite.Mission
             catch (Exception ex)
             {
                 ModLogger.LogDebug($"{ModConstants.ModuleId}: Native cavalry sequence tick skipped ({ex.Message})");
+            }
+        }
+
+        /// <summary>
+        /// Slice 19 — marker lifetimes + throttled ground target sampling (text/visual fallback inside service).
+        /// </summary>
+        private void MaybeDiagnostics(float dt)
+        {
+            try
+            {
+                _commanderDiagnosticsService?.Tick(dt);
+            }
+            catch (Exception ex)
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: diagnostics tick skipped ({ex.Message})");
+            }
+        }
+
+        private void MaybeTickCommandMarkers(float dt)
+        {
+            try
+            {
+                _commandMarkerService?.Tick(dt);
+                if (_commandMarkerService == null
+                    || !_commanderConfig.EnableCommandMarkers
+                    || Mission == null
+                    || Mission.MissionEnded
+                    || !_commanderModeState.IsEnabled
+                    || !_cameraController.HasPose)
+                {
+                    return;
+                }
+
+                CommandMarkerSettings markerSettings = CommandMarkerSettings.FromConfig(_commanderConfig);
+                _groundTargetMarkerAccum += dt;
+                if (_groundTargetMarkerAccum < markerSettings.MarkerRefreshThrottleSeconds)
+                {
+                    return;
+                }
+
+                _groundTargetMarkerAccum = 0f;
+                CommanderCameraPose pose = _cameraController.GetPose();
+                GroundTargetResult ground = _groundTargetResolver.TryResolveFromCamera(
+                    Mission,
+                    pose.Position,
+                    pose.Yaw,
+                    pose.Pitch);
+                if (ground.Success)
+                {
+                    _commandMarkerService.AddGroundTargetMarker(ground);
+                }
+            }
+            catch (Exception ex)
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: command markers tick skipped ({ex.Message})");
+            }
+        }
+
+        private void MaybeShowReformPointMarker(Formation formation)
+        {
+            try
+            {
+                if (_commandMarkerService == null
+                    || !_commanderConfig.EnableCommandMarkers
+                    || formation == null
+                    || _formationDataAdapter == null)
+                {
+                    return;
+                }
+
+                FormationDataResult c = _formationDataAdapter.TryGetFormationCenter(formation);
+                if (c.Success)
+                {
+                    _commandMarkerService.AddReformMarker(c.Vec3);
+                }
+            }
+            catch (Exception ex)
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: reform marker skipped ({ex.Message})");
             }
         }
 
@@ -892,6 +991,7 @@ namespace Bannerlord.RTSCameraLite.Mission
                     if (_commandRouter.TryStartNativeCavalryChargeSequence(cavSeq, ctxN, _cavalryNativeChargeOrchestrator, out string startMsg))
                     {
                         _cavalryNativeSeqTransitionLog[formation] = new NativeCavalrySequenceLogState();
+                        MaybeShowChargeTargetMarker(cavSeq);
                     }
                     else if (_commanderConfig.EnableCavalrySequenceDebug && _secondsSinceCommandValidationLog >= logInterval)
                     {
@@ -985,11 +1085,44 @@ namespace Bannerlord.RTSCameraLite.Mission
             CommandContext context = BuildCommandContext(intent.SourceFormation, intent.Source);
             CommandValidationResult validation = _commandRouter.Validate(intent, context);
             CommandExecutionDecision decision = _commandRouter.Decide(intent, context);
+            MaybeShowMoveTargetMarkerForValidatedIntent(intent, validation);
             if (_commanderConfig.EnableCommandValidationDebug && _secondsSinceCommandValidationLog >= logInterval)
             {
                 ModLogger.LogDebug(
                     $"{ModConstants.ModuleId}: Cmd {intent.Type}: valid={validation.IsValid}, blocked={validation.IsBlocked}, {validation.Message}; execute={decision.ShouldExecute}, native={decision.RequiresNativeOrder}, cavSeq={decision.RequiresCavalrySequence}, prim={decision.NativePrimitive}, {decision.Reason}");
                 _secondsSinceCommandValidationLog = 0f;
+            }
+        }
+
+        private void MaybeShowMoveTargetMarkerForValidatedIntent(CommandIntent intent, CommandValidationResult validation)
+        {
+            try
+            {
+                if (_commandMarkerService == null || !_commanderConfig.EnableCommandMarkers)
+                {
+                    return;
+                }
+
+                if (intent == null || !validation.IsValid || validation.IsBlocked)
+                {
+                    return;
+                }
+
+                if (intent.Type != CommandType.AdvanceOrMove || !intent.TargetPosition.HasValue)
+                {
+                    return;
+                }
+
+                Vec3 p = intent.TargetPosition.Value;
+                _commandMarkerService.AddMarker(
+                    CommandMarkerType.MoveTarget,
+                    p,
+                    "Move",
+                    intent.Source ?? "command-router-debug");
+            }
+            catch (Exception ex)
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: move target marker skipped ({ex.Message})");
             }
         }
 
@@ -1024,6 +1157,33 @@ namespace Bannerlord.RTSCameraLite.Mission
                 RequiresCommander = false,
                 Source = "debug-key-C"
             };
+        }
+
+        private void MaybeShowChargeTargetMarker(CommandIntent cavSeq)
+        {
+            try
+            {
+                if (_commandMarkerService == null
+                    || !_commanderConfig.EnableCommandMarkers
+                    || cavSeq?.TargetFormation == null
+                    || _formationDataAdapter == null)
+                {
+                    return;
+                }
+
+                FormationDataResult c = _formationDataAdapter.TryGetFormationCenter(cavSeq.TargetFormation);
+                if (!c.Success)
+                {
+                    return;
+                }
+
+                FormationTargetResult t = FormationTargetResult.At(c.Vec3, cavSeq.TargetFormation);
+                _commandMarkerService.AddChargeTargetMarker(t);
+            }
+            catch (Exception ex)
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: charge target marker skipped ({ex.Message})");
+            }
         }
 
         private CommandIntent BuildNativeCavalryChargeSequenceIntent(Formation formation)
@@ -1078,6 +1238,163 @@ namespace Bannerlord.RTSCameraLite.Mission
             };
         }
 
+        /// <summary>Slice 20 — throttled text diagnostics (F9 toggle); no overlay.</summary>
+        private void MaybeDiagnostics(float dt)
+        {
+            if (_tacticalFeedback == null)
+            {
+                return;
+            }
+
+            DiagnosticsSettings ds = DiagnosticsSettings.FromCommanderConfig(_commanderConfig);
+            if (!ds.EnableDiagnostics)
+            {
+                return;
+            }
+
+            if (_commanderInput.TryConsumeDiagnosticsToggle(Input))
+            {
+                _commanderDiagnosticsService.ToggleDiagnostics();
+                bool on = _commanderDiagnosticsService.IsVisible;
+                _tacticalFeedback.ShowDiagnosticsSummary(on ? "ON" : "OFF", 0.2, true);
+            }
+
+            _commanderDiagnosticsService.Tick(dt);
+
+            bool gateMode = !ds.ShowDiagnosticsInCommanderModeOnly || _commanderModeState.IsEnabled;
+            if (!_commanderDiagnosticsService.IsVisible || !gateMode)
+            {
+                return;
+            }
+
+            if (!_commanderDiagnosticsService.ShouldPublishRefresh(dt, ds.DiagnosticsRefreshIntervalSeconds))
+            {
+                return;
+            }
+
+            try
+            {
+                var snaps = new List<FormationDiagnosticsSnapshot>();
+                if (Mission?.PlayerTeam != null)
+                {
+                    foreach (Formation f in Mission.PlayerTeam.FormationsIncludingEmpty)
+                    {
+                        FormationDiagnosticsSnapshot s = TryBuildDiagnosticsSnapshot(f);
+                        if (s != null)
+                        {
+                            snaps.Add(s);
+                        }
+                    }
+                }
+
+                if (snaps.Count == 0)
+                {
+                    return;
+                }
+
+                string block = FormationDiagnosticsFormatter.FormatMultiFormationBlock(snaps, ds);
+                if (string.IsNullOrEmpty(block))
+                {
+                    return;
+                }
+
+                double cd = System.Math.Max(0.45, ds.DiagnosticsRefreshIntervalSeconds * 0.92);
+                _tacticalFeedback.ShowDiagnosticsSummary(block, cd, false);
+            }
+            catch (Exception ex)
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: diagnostics skipped ({ex.Message})");
+            }
+        }
+
+        private FormationDiagnosticsSnapshot TryBuildDiagnosticsSnapshot(Formation formation)
+        {
+            if (_commanderAssignmentService == null
+                || _anchorResolver == null
+                || _formationEligibilityRules == null
+                || _commanderRallyPlanner == null
+                || formation == null
+                || Mission == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                if (formation.CountOfUnits <= 0)
+                {
+                    return null;
+                }
+
+                CommanderPresenceResult presence = _commanderAssignmentService.DetectCommander(Mission, formation);
+                CommanderAnchorState anchor = _anchorResolver.ResolveAnchor(Mission, formation, presence, _anchorSettings);
+                FormationDoctrineProfile doctrine = ResolveDoctrineProfile(formation, presence);
+                FormationEligibilityResult elig = _formationEligibilityRules.Evaluate(formation, presence, doctrine);
+                CommanderRallyState rally = _commanderRallyPlanner.BuildRallyState(
+                    Mission,
+                    formation,
+                    presence,
+                    anchor,
+                    _commanderRallySettings,
+                    _troopAbsorptionController);
+                _cavalryDoctrineByFormation.TryGetValue(formation, out CavalryChargeSequenceState docCav);
+                _cavalrySequenceRegistry.TryGetSequence(formation, out CavalryChargeSequenceState natCav);
+                string tgt = BuildDiagnosticsTargetSummary(formation);
+                return _commanderDiagnosticsService.BuildSnapshot(
+                    formation,
+                    presence,
+                    anchor,
+                    doctrine,
+                    elig,
+                    rally,
+                    docCav,
+                    natCav,
+                    tgt,
+                    _commanderConfig);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private string BuildDiagnosticsTargetSummary(Formation formation)
+        {
+            try
+            {
+                if (Mission == null || formation == null)
+                {
+                    return "—";
+                }
+
+                if (CavalryTargetTracker.TryGetNearestEnemyFormation(Mission, formation, _formationDataAdapter, out Formation enemy)
+                    && enemy != null)
+                {
+                    try
+                    {
+                        return "En:" + enemy.RepresentativeClass;
+                    }
+                    catch
+                    {
+                        return "En:?";
+                    }
+                }
+
+                if (_commanderModeState.IsEnabled && _cameraController != null && _cameraController.HasPose && _groundTargetResolver != null)
+                {
+                    CommanderCameraPose p = _cameraController.GetPose();
+                    GroundTargetResult g = _groundTargetResolver.TryResolveFromCamera(Mission, p.Position, p.Yaw, p.Pitch);
+                    return g.Success ? "GrndOK" : "Grnd—";
+                }
+
+                return "—";
+            }
+            catch
+            {
+                return "—";
+            }
+        }
+
         private void EnsureLifecycleCleanup(string reason)
         {
             if (_lifecycleCleanupDone)
@@ -1114,9 +1431,13 @@ namespace Bannerlord.RTSCameraLite.Mission
             _cavalryWideLayoutLogTime.Clear();
             _cavalrySequenceRegistry.Clear();
             _cavalryNativeSeqTransitionLog.Clear();
+            _commandMarkerService?.Cleanup();
+            _tacticalFeedback?.ResetSession();
             _secondsSinceCommandValidationLog = 0f;
             _troopAbsorptionController?.Clear();
             _cameraController.Reset();
+            _commanderDiagnosticsService?.Cleanup();
+            _feedbackThrottle?.ClearKey("diagnostics-summary");
         }
 
         private void LogShellActiveOnce()
