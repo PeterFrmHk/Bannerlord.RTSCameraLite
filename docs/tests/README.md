@@ -23,3 +23,4 @@ This folder holds **repeatable manual regression** material for **Bannerlord.RTS
 - Root manual checklist: `docs/manual-test-checklist.md`
 - Per-slice checklists: `docs/tests/manual-test-checklist-slice-*.md`
 - Slice roadmap / audits: `docs/slice-roadmap.md`, `docs/slices/`, `docs/slice-*-audit.md`
+- **Compatibility & load order (Slice 25):** [`../compatibility/README.md`](../compatibility/README.md)
