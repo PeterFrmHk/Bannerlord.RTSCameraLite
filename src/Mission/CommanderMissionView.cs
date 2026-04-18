@@ -9,7 +9,7 @@ using TaleWorlds.MountAndBlade.View.MissionViews;
 namespace Bannerlord.RTSCameraLite.Mission
 {
     /// <summary>
-    /// Mission shell: commander mode, internal RTS camera pose movement, <see cref="CameraBridge"/> hand-off (Slice 4).
+    /// Mission shell: commander mode, internal RTS camera pose, <see cref="CameraBridge"/> hand-off, input ownership / Backspace guard (Slice 7).
     /// </summary>
     public sealed class CommanderMissionView : MissionView
     {
@@ -18,6 +18,7 @@ namespace Bannerlord.RTSCameraLite.Mission
         private readonly CameraBridge _cameraBridge = new CameraBridge();
         private readonly CommanderCameraController _cameraController = new CommanderCameraController();
         private readonly BackspaceConflictGuard _backspaceConflictGuard = new BackspaceConflictGuard();
+        private readonly CommanderNativeInputGuard _nativeInputGuard = new CommanderNativeInputGuard();
         private CommanderConfig _commanderConfig = CommanderConfigDefaults.CreateDefault();
         private bool _loggedShellActive;
         private bool _lastLoggedEnabled;
@@ -42,18 +43,20 @@ namespace Bannerlord.RTSCameraLite.Mission
             ConfigLoadResult loadResult = CommanderConfigService.LoadOrCreate();
             _commanderConfig = loadResult.Config ?? CommanderConfigDefaults.CreateDefault();
             _commanderInput.ApplyConfig(_commanderConfig);
+            _backspaceConflictGuard.ApplyConfig(_commanderConfig);
+            _nativeInputGuard.ApplyConfig(_commanderConfig);
             _cameraController.ApplyMovementSettings(CommanderCameraMovementSettings.FromConfig(_commanderConfig));
             _cameraController.InitializeFromMission(Mission);
 
             if (_commanderConfig.StartBattlesInCommanderMode)
             {
                 _commanderModeState.Enable(ModConstants.CommanderShellDefaultEnableReason);
-                _backspaceConflictGuard.EnterCommanderMode();
+                SyncCommanderInputGuardsWithCommanderMode();
             }
             else
             {
                 _commanderModeState.Disable("config: StartBattlesInCommanderMode false");
-                _backspaceConflictGuard.ExitCommanderMode();
+                SyncCommanderInputGuardsWithCommanderMode();
             }
 
             ModLogger.LogDebug(
@@ -86,7 +89,7 @@ namespace Bannerlord.RTSCameraLite.Mission
             if (toggle)
             {
                 _commanderModeState.Toggle("commander mode toggle key");
-                SyncBackspaceGuardWithCommanderMode();
+                SyncCommanderInputGuardsWithCommanderMode();
                 LogEnabledTransition();
                 if (_commanderModeState.IsEnabled)
                 {
@@ -100,6 +103,7 @@ namespace Bannerlord.RTSCameraLite.Mission
             }
 
             _backspaceConflictGuard.Tick();
+            _nativeInputGuard.Tick();
             TickCommanderCameraAndBridge(dt);
         }
 
@@ -109,15 +113,33 @@ namespace Bannerlord.RTSCameraLite.Mission
             base.OnRemoveBehavior();
         }
 
-        private void SyncBackspaceGuardWithCommanderMode()
+        private void SyncCommanderInputGuardsWithCommanderMode()
         {
             if (_commanderModeState.IsEnabled)
             {
                 _backspaceConflictGuard.EnterCommanderMode();
+                _nativeInputGuard.EnterCommanderMode();
             }
             else
             {
                 _backspaceConflictGuard.ExitCommanderMode();
+                _nativeInputGuard.ExitCommanderMode();
+                RestoreNativeCameraAfterCommanderDisable();
+            }
+        }
+
+        private void RestoreNativeCameraAfterCommanderDisable()
+        {
+            if (Mission == null)
+            {
+                return;
+            }
+
+            CameraBridgeResult restore = _cameraBridge.RestoreNativeCamera(Mission);
+            if (!restore.Restored)
+            {
+                ModLogger.LogDebug(
+                    $"{ModConstants.ModuleId}: CameraBridge restore (commander off) — Restored={restore.Restored}: {restore.Message}");
             }
         }
 
@@ -172,7 +194,8 @@ namespace Bannerlord.RTSCameraLite.Mission
             }
 
             _lifecycleCleanupDone = true;
-            _backspaceConflictGuard.ExitCommanderMode();
+            _nativeInputGuard.Cleanup();
+            _backspaceConflictGuard.Cleanup();
             if (Mission != null)
             {
                 CameraBridgeResult restore = _cameraBridge.RestoreNativeCamera(Mission);

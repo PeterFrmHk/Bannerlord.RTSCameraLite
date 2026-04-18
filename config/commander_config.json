@@ -2,6 +2,10 @@
   "StartBattlesInCommanderMode": true,
   "ModeActivationKey": "Backspace",
   "OverrideNativeBackspaceOrders": true,
+  "AllowNativeOrdersWhenCommanderModeDisabled": true,
+  "EnableInputOwnershipGuard": true,
+  "SuppressNativeMovementInCommanderMode": false,
+  "SuppressNativeCombatInCommanderMode": false,
   "EnableDebugFallbackToggle": true,
   "DebugFallbackToggleKey": "F10",
 

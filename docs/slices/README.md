@@ -27,6 +27,7 @@ Some slices touch fragile engine surfaces. See **`docs/slice-hard-gates.md`** be
 | 3 | [`slice-3-adapter-boundaries.md`](slice-3-adapter-boundaries.md) — adapter skeletons (`CameraBridge`, orders, formation reads, Backspace guard) |
 | 4 | [`slice-4-internal-camera-pose-movement.md`](slice-4-internal-camera-pose-movement.md) — internal pose + input snapshot; manual checklist [`manual-test-checklist-slice-4.md`](../tests/manual-test-checklist-slice-4.md) |
 | 5 | [`slice-5-real-camera-bridge.md`](slice-5-real-camera-bridge.md) — typed `CameraBridge` + restore; manual checklist [`manual-test-checklist-slice-5.md`](../tests/manual-test-checklist-slice-5.md) |
+| 7 | [`slice-7-backspace-conflict-input-ownership.md`](slice-7-backspace-conflict-input-ownership.md) — Backspace policy + ownership state; manual checklist [`manual-test-checklist-slice-7.md`](../tests/manual-test-checklist-slice-7.md) |
 
 ## Slice audit index (repository root)
 
@@ -39,6 +40,7 @@ Audit files live under `docs/` (historical layout):
 | 3 | `docs/slice-3-audit.md` |
 | 4 | § Audit in `docs/slices/slice-4-internal-camera-pose-movement.md` |
 | 5 | `docs/slice-5-audit.md` |
+| 7 | § Audit in `docs/slices/slice-7-backspace-conflict-input-ownership.md` |
 | 6 | `docs/slice-6-audit.md` |
 | 7 | `docs/slice-7-audit.md` |
 | 8 | `docs/slice-8-audit.md` |

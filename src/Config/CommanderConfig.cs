@@ -11,6 +11,21 @@ namespace Bannerlord.RTSCameraLite.Config
 
         public bool OverrideNativeBackspaceOrders { get; set; }
 
+        /// <summary>
+        /// When commander mode is off, native order UI may use the same physical keys as the profile default.
+        /// Slice 7: policy only — managed suppression of native order menu is not available (see research).
+        /// </summary>
+        public bool AllowNativeOrdersWhenCommanderModeDisabled { get; set; }
+
+        /// <summary>When true, exposes advisory input ownership state while commander mode is on.</summary>
+        public bool EnableInputOwnershipGuard { get; set; }
+
+        /// <summary>Reserved; no safe suppression path in Slice 7 — must stay false until research approves an engine hook.</summary>
+        public bool SuppressNativeMovementInCommanderMode { get; set; }
+
+        /// <summary>Reserved; no safe suppression path in Slice 7 — must stay false until research approves an engine hook.</summary>
+        public bool SuppressNativeCombatInCommanderMode { get; set; }
+
         public bool EnableDebugFallbackToggle { get; set; }
 
         public string DebugFallbackToggleKey { get; set; } = string.Empty;

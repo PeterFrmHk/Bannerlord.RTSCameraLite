@@ -1,4 +1,5 @@
 using Bannerlord.RTSCameraLite.Config;
+using Bannerlord.RTSCameraLite.Core;
 using TaleWorlds.InputSystem;
 
 namespace Bannerlord.RTSCameraLite.Input
@@ -65,6 +66,14 @@ namespace Bannerlord.RTSCameraLite.Input
             _fastMoveKey = ParseBinding(config?.FastMoveKey, d.FastMoveKey, InputKey.LeftShift);
             _zoomInKey = ParseBinding(config?.ZoomInKey, d.ZoomInKey, InputKey.R);
             _zoomOutKey = ParseBinding(config?.ZoomOutKey, d.ZoomOutKey, InputKey.F);
+
+            if (_debugFallbackEnabled && _debugFallbackToggleKey == _modeActivationKey)
+            {
+                ModLogger.LogWarningOnce(
+                    "commander_debug_toggle_shadows_activation",
+                    $"{ModConstants.ModuleId}: debug fallback toggle key matches mode activation key; disabling fallback to avoid ownership conflict.");
+                _debugFallbackEnabled = false;
+            }
         }
 
         private static InputKey ParseBinding(string candidate, string defaultName, InputKey hardFallback)

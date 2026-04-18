@@ -96,6 +96,8 @@ namespace Bannerlord.RTSCameraLite.Config
                     throw new InvalidOperationException("deserialized config is null");
                 }
 
+                ApplyOmittedSlice7PolicyDefaults(json, parsed);
+
                 return new ConfigLoadResult(
                     loaded: true,
                     usedDefaults: false,
@@ -115,6 +117,65 @@ namespace Bannerlord.RTSCameraLite.Config
                     message: ex.Message,
                     CommanderConfigDefaults.CreateDefault());
             }
+        }
+
+        /// <summary>
+        /// System.Text.Json sets omitted booleans to false. Restore Slice 7 policy defaults when keys are absent from the file.
+        /// </summary>
+        private static void ApplyOmittedSlice7PolicyDefaults(string json, CommanderConfig parsed)
+        {
+            if (parsed == null || string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            try
+            {
+                using JsonDocument doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                JsonElement root = doc.RootElement;
+                CommanderConfig d = CommanderConfigDefaults.CreateDefault();
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.AllowNativeOrdersWhenCommanderModeDisabled)))
+                {
+                    parsed.AllowNativeOrdersWhenCommanderModeDisabled = d.AllowNativeOrdersWhenCommanderModeDisabled;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableInputOwnershipGuard)))
+                {
+                    parsed.EnableInputOwnershipGuard = d.EnableInputOwnershipGuard;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.SuppressNativeMovementInCommanderMode)))
+                {
+                    parsed.SuppressNativeMovementInCommanderMode = d.SuppressNativeMovementInCommanderMode;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.SuppressNativeCombatInCommanderMode)))
+                {
+                    parsed.SuppressNativeCombatInCommanderMode = d.SuppressNativeCombatInCommanderMode;
+                }
+            }
+            catch
+            {
+                // Primary deserialize already succeeded; ignore merge edge cases.
+            }
+        }
+
+        private static bool JsonHasPropertyIgnoreCase(JsonElement root, string name)
+        {
+            foreach (JsonProperty p in root.EnumerateObject())
+            {
+                if (string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static string ResolveConfigPath()
