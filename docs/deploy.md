@@ -12,7 +12,7 @@ Creates **`artifacts/Bannerlord.RTSCameraLite/`** with:
 
 - `SubModule.xml`
 - `config/commander_config.json`
-- `bin/Win64_Shipping_Client/` — **all** files from the project output (mod DLL + NuGet dependency DLLs). TaleWorlds assemblies are **not** copied (reference-only in the csproj).
+- `bin/Win64_Shipping_Client/` — **all** files from the project output (mod DLL + NuGet dependency DLLs such as **System.Text.Json**). **`0Harmony.dll` must not** appear — runtime Harmony is supplied by the **Bannerlord.Harmony** module; the package script skips it if present. TaleWorlds assemblies are **not** copied (reference-only in the csproj).
 
 Optional zip: **`artifacts/Bannerlord.RTSCameraLite.zip`**
 
@@ -33,7 +33,7 @@ Flags:
 
 ## 2. Audit (read-only)
 
-Verifies a deployed module under the game **`Modules`** folder: paths, `SubModule.xml` Id/DLLName, official dependencies, optional comparison to repo **`bin/Win64_Shipping_Client`**, and whether **`EnableMissionRuntimeHooks`** is false (load-safe default).
+Verifies a deployed module under the game **`Modules`** folder (or **`-ModuleRoot`** staging): paths, `SubModule.xml` Id/Name/DLLName, folder name vs Id, **`SubModule.xml` not duplicated under `bin`**, official dependencies, **Bannerlord.Harmony** presence (Modules or Workshop `2859188632`), **`DependedModule Bannerlord.Harmony`** in XML, **`0Harmony.dll` absent** from the mod folder, optional comparison to repo **`bin/Win64_Shipping_Client`**, and whether **`EnableMissionRuntimeHooks`** / **`EnableHarmonyPatches`** are false (deployable defaults).
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/audit-steam-deployment.ps1
@@ -44,6 +44,16 @@ Optional:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/audit-steam-deployment.ps1 -GameRoot "C:\Program Files (x86)\Steam\steamapps\common\Mount & Blade II Bannerlord" -ModuleId Bannerlord.RTSCameraLite
 ```
+
+**Verify packaged tree (Workshop-style layout) without copying into `Modules` yet:**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/audit-steam-deployment.ps1 `
+  -GameRoot "C:\Program Files (x86)\Steam\steamapps\common\Mount & Blade II Bannerlord" `
+  -ModuleRoot "<repo>\artifacts\Bannerlord.RTSCameraLite"
+```
+
+See `docs/research/workshop-261550-deploy-layout-reference.md` for how this compares to other `261550` items.
 
 Resolution order: **`-GameRoot`** → **`BANNERLORD_INSTALL`** → default Steam path → **`libraryfolders.vdf`** scan.
 

@@ -12,8 +12,15 @@
 .PARAMETER RepoRoot
   Optional repo root containing bin/Win64_Shipping_Client for dependency comparison.
 
+.PARAMETER ModuleRoot
+  Optional full path to the module folder root (e.g. artifacts/Bannerlord.RTSCameraLite after package-module.ps1).
+  When set, layout checks use this path instead of GameRoot\Modules\<ModuleId>. GameRoot is still used for official deps and Workshop Harmony discovery.
+
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts/audit-steam-deployment.ps1
+
+.EXAMPLE
+  powershell -ExecutionPolicy Bypass -File scripts/audit-steam-deployment.ps1 -GameRoot "C:\...\Mount & Blade II Bannerlord" -ModuleRoot "C:\...\Bannerlord.RTSCameraLite\artifacts\Bannerlord.RTSCameraLite"
 #>
 [CmdletBinding()]
 param(
@@ -21,7 +28,9 @@ param(
 
     [string]$ModuleId = "Bannerlord.RTSCameraLite",
 
-    [string]$RepoRoot = ""
+    [string]$RepoRoot = "",
+
+    [string]$ModuleRoot = ""
 )
 
 $ErrorActionPreference = "Continue"
@@ -87,7 +96,19 @@ if (-not $resolved) {
 
 Test-One -Name "Game root resolved" -Ok $true -Detail $resolved
 
-$modPath = Join-Path $resolved "Modules\$ModuleId"
+if (-not [string]::IsNullOrWhiteSpace($ModuleRoot)) {
+    if (-not (Test-Path -LiteralPath $ModuleRoot)) {
+        Test-One -Name "ModuleRoot exists" -Ok $false -Detail $ModuleRoot
+        exit 1
+    }
+
+    $modPath = (Resolve-Path -LiteralPath $ModuleRoot).Path
+    Test-One -Name "Audit mode" -Ok $true -Detail "ModuleRoot (staging or custom): $modPath"
+}
+else {
+    $modPath = Join-Path $resolved "Modules\$ModuleId"
+}
+
 $subXml = Join-Path $modPath "SubModule.xml"
 $cfgJson = Join-Path $modPath "config\commander_config.json"
 $binPath = Join-Path $modPath "bin\Win64_Shipping_Client"
@@ -106,20 +127,70 @@ foreach ($d in $deps) {
     Test-One -Name "Official dep: $d" -Ok (Test-Path -LiteralPath $p)
 }
 
-# SubModule.xml Id / DLLName
+# Bannerlord.Harmony (Workshop / optional manual): at least one path should resolve for launcher satisfaction
+$harmonyLocal = Join-Path $resolved "Modules\Bannerlord.Harmony\SubModule.xml"
+$steamApps = Split-Path (Split-Path $resolved -Parent) -Parent
+$workshopRoot = Join-Path $steamApps "workshop\content\261550"
+if (-not (Test-Path -LiteralPath $workshopRoot)) {
+    $workshopRoot = Join-Path ${env:ProgramFiles(x86)} "Steam\steamapps\workshop\content\261550"
+}
+$harmonyWs = Join-Path $workshopRoot "2859188632\SubModule.xml"
+$harmonyOk = (Test-Path -LiteralPath $harmonyLocal) -or (Test-Path -LiteralPath $harmonyWs)
+if (-not $harmonyOk) {
+    Test-One -Name "Bannerlord.Harmony module present (Modules or Workshop 2859188632)" -Ok $false -Detail "Install BUTR Bannerlord.Harmony (Workshop)"
+}
+else {
+    $detail = if (Test-Path -LiteralPath $harmonyLocal) { $harmonyLocal } else { $harmonyWs }
+    Test-One -Name "Bannerlord.Harmony module present" -Ok $true -Detail $detail
+}
+
+if (Test-Path -LiteralPath $subXml) {
+    try {
+        [xml]$sx = Get-Content -LiteralPath $subXml -Encoding UTF8
+        $hasHarmonyDep = $false
+        foreach ($n in @($sx.Module.DependedModules.DependedModule)) {
+            if ($n.Id -eq "Bannerlord.Harmony") { $hasHarmonyDep = $true; break }
+        }
+        Test-One -Name "SubModule.xml declares DependedModule Bannerlord.Harmony" -Ok $hasHarmonyDep
+    }
+    catch {
+        Test-One -Name "SubModule Harmony dep parse" -Ok $false -Detail $_.Exception.Message
+    }
+}
+
+# SubModule.xml Id / DLLName + Workshop-style layout (compare to steamapps\workshop\content\261550\* patterns)
 if (Test-Path -LiteralPath $subXml) {
     try {
         [xml]$x = Get-Content -LiteralPath $subXml -Encoding UTF8
         $id = $x.Module.Id.value
+        $displayName = if ($x.Module.Name) { $x.Module.Name.value } else { "" }
         $sub = $x.Module.SubModules.SubModule
         if ($sub -is [Array]) { $sub = $sub[0] }
         $dllName = $sub.DLLName.value
+        Test-One -Name "SubModule has Name" -Ok (-not [string]::IsNullOrWhiteSpace($displayName)) -Detail $displayName
         Test-One -Name "SubModule Id matches module" -Ok ($id -eq $ModuleId) -Detail "Id=$id"
         Test-One -Name "DLLName is mod assembly" -Ok ($dllName -eq "$ModuleId.dll") -Detail "DLLName=$dllName"
+        $leaf = Split-Path -Leaf $modPath
+        Test-One -Name "Folder name matches Module Id (261550 convention)" -Ok ($leaf -eq $ModuleId) -Detail "Folder=$leaf"
+
+        $dllCount = (Get-ChildItem -LiteralPath $binPath -Filter "*.dll" -File -ErrorAction SilentlyContinue | Measure-Object).Count
+        Test-One -Name "bin/Win64_Shipping_Client has managed DLLs" -Ok ($dllCount -gt 0) -Detail "Count=$dllCount"
+
+        $subInBin = Join-Path $binPath "SubModule.xml"
+        Test-One -Name "SubModule.xml not under bin (261550 layout)" -Ok (-not (Test-Path -LiteralPath $subInBin)) -Detail $subInBin
     }
     catch {
         Test-One -Name "SubModule.xml parse" -Ok $false -Detail $_.Exception.Message
     }
+}
+
+# Reference: sample Workshop item layout (Harmony) when present - same top-level SubModule + bin pattern as our package
+$refHarmonyRoot = Join-Path $workshopRoot "2859188632"
+if (Test-Path -LiteralPath (Join-Path $refHarmonyRoot "SubModule.xml")) {
+    Test-One -Name "Workshop reference (2859188632 Harmony) layout present" -Ok $true -Detail $refHarmonyRoot
+}
+else {
+    Test-One -Name "Workshop reference (2859188632) not on disk" -Ok $null -Detail "Cannot cross-check 261550 layout on this machine"
 }
 
 # Compare DLL set to build output (if present)
@@ -132,6 +203,12 @@ if (Test-Path -LiteralPath $buildBin) {
     foreach ($e in $expected) {
         $ok = $deployed -contains $e
         Test-One -Name "Deployed DLL matches build: $e" -Ok $ok
+    }
+    if ($deployed -contains "0Harmony.dll") {
+        Test-One -Name "0Harmony.dll must not ship with mod (use Bannerlord.Harmony)" -Ok $false
+    }
+    else {
+        Test-One -Name "0Harmony.dll absent from deploy (expected)" -Ok $true
     }
     $extra = $deployed | Where-Object { $expected -notcontains $_ }
     foreach ($ex in $extra) {
@@ -154,6 +231,16 @@ if (Test-Path -LiteralPath $cfgJson) {
         }
         else {
             Test-One -Name "EnableMissionRuntimeHooks explicit" -Ok $null -Detail "Key missing or unrecognized"
+        }
+
+        if ($raw -match '"EnableHarmonyPatches"\s*:\s*true') {
+            Test-One -Name "EnableHarmonyPatches (scaffold default should be false)" -Ok $null -Detail "Currently true"
+        }
+        elseif ($raw -match '"EnableHarmonyPatches"\s*:\s*false') {
+            Test-One -Name "EnableHarmonyPatches false (expected for deployable default)" -Ok $true
+        }
+        else {
+            Test-One -Name "EnableHarmonyPatches key" -Ok $null -Detail "Missing or unrecognized (migration may add)"
         }
     }
     catch { }

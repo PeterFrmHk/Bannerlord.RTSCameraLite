@@ -206,12 +206,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="SubModule.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="config\commander_config.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <!-- Do not copy SubModule.xml or config into bin/Win64_Shipping_Client: Workshop layout expects them only at module root (package-module.ps1 stages them). -->
+    <None Include="SubModule.xml" />
+    <None Include="config\commander_config.json" />
   </ItemGroup>
 
   <Target Name="PackageModuleLayout" AfterTargets="Build">

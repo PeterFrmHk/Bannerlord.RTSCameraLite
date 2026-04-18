@@ -1,6 +1,7 @@
 {
   "ConfigFileVersion": 1,
   "EnableMissionRuntimeHooks": false,
+  "EnableHarmonyPatches": false,
   "StartBattlesInCommanderMode": false,
   "ModeActivationKey": "Backspace",
   "OverrideNativeBackspaceOrders": true,

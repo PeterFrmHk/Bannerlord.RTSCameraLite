@@ -4,7 +4,8 @@
   Builds (unless skipped) and packages a deployable Bannerlord module into artifacts/Bannerlord.RTSCameraLite.
 
 .DESCRIPTION
-  Copies SubModule.xml, config/, and the full bin/Win64_Shipping_Client output (including PackageReference dependency DLLs).
+  Copies SubModule.xml, config/, and the full bin/Win64_Shipping_Client output (e.g. System.Text.Json).
+  Skips 0Harmony.dll if present — runtime Harmony must come from the Bannerlord.Harmony module.
   Does not copy TaleWorlds assemblies — they are reference-only in the project and are not emitted to build output.
 
 .PARAMETER Configuration
@@ -84,10 +85,21 @@ New-Item -ItemType Directory -Path (Join-Path $staging "config") -Force | Out-Nu
 Copy-Item -LiteralPath $subModule -Destination (Join-Path $staging "SubModule.xml") -Force
 Copy-Item -Path (Join-Path $configSrc "*") -Destination (Join-Path $staging "config") -Recurse -Force
 
-# Full managed output: mod DLL + System.Text.Json etc. (not TaleWorlds — those are Private=false and not copied to output)
+# Full managed output: mod DLL + System.Text.Json etc. (not TaleWorlds - those are Private=false and not copied to output)
 $binDest = Join-Path $staging "bin\Win64_Shipping_Client"
 Get-ChildItem -LiteralPath $binOut -File -ErrorAction SilentlyContinue | ForEach-Object {
+    if ($_.Name -ieq "0Harmony.dll") {
+        Write-Warning "Skipping 0Harmony.dll - runtime Harmony must come from Bannerlord.Harmony module, not this package."
+        return
+    }
+    # Never ship module manifest from build output (261550 mods keep SubModule.xml at module root only).
+    if ($_.Name -ieq "SubModule.xml") { return }
     Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $binDest $_.Name) -Force
+}
+
+$harmonyLeak = Join-Path $binDest "0Harmony.dll"
+if (Test-Path -LiteralPath $harmonyLeak) {
+    throw "Package policy: 0Harmony.dll must not be staged (remove from build output or fix references)."
 }
 
 Write-Host ""
