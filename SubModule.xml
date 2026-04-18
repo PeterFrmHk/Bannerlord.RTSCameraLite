@@ -13,6 +13,7 @@
     <DependedModule Id="Sandbox"/>
     <DependedModule Id="StoryMode"/>
     <DependedModule Id="CustomBattle"/>
+    <DependedModule Id="Bannerlord.Harmony"/>
   </DependedModules>
 
   <SubModules>

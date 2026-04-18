@@ -106,6 +106,7 @@ namespace Bannerlord.RTSCameraLite.Config
 
                 ApplyOmittedSlice7PolicyDefaults(json, parsed);
                 ApplyOmittedSlice25RuntimeHookDefaults(json, parsed);
+                ApplyOmittedHarmonyScaffoldDefaults(json, parsed);
                 CommanderConfigDefaults.HarmonizeLegacyDetectionFields(parsed);
                 ApplyOmittedSlice9AnchorDefaults(json, parsed);
                 ApplyOmittedSlice10DoctrineDefaults(json, parsed);
@@ -226,6 +227,41 @@ namespace Bannerlord.RTSCameraLite.Config
                 if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableMissionRuntimeHooks)))
                 {
                     parsed.EnableMissionRuntimeHooks = false;
+                }
+            }
+            catch
+            {
+                // Ignore merge failures.
+            }
+        }
+
+        /// <summary>
+        /// Omitted Harmony scaffold keys deserialize to false — keep fail-closed when absent from JSON.
+        /// </summary>
+        private static void ApplyOmittedHarmonyScaffoldDefaults(string json, CommanderConfig parsed)
+        {
+            if (parsed == null || string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            try
+            {
+                using JsonDocument doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                JsonElement root = doc.RootElement;
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableHarmonyPatches)))
+                {
+                    parsed.EnableHarmonyPatches = false;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableHarmonyDiagnostics)))
+                {
+                    parsed.EnableHarmonyDiagnostics = false;
                 }
             }
             catch

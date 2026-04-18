@@ -13,6 +13,16 @@ namespace Bannerlord.RTSCameraLite.Config
         /// </summary>
         public bool EnableMissionRuntimeHooks { get; set; }
 
+        /// <summary>
+        /// When true, allows <c>HarmonyPatchService</c> to initialize Harmony (still no patches until a future slice). Default false.
+        /// </summary>
+        public bool EnableHarmonyPatches { get; set; }
+
+        /// <summary>
+        /// Extra logging when Harmony scaffold runs. Default false.
+        /// </summary>
+        public bool EnableHarmonyDiagnostics { get; set; }
+
         public bool StartBattlesInCommanderMode { get; set; }
 
         public string ModeActivationKey { get; set; } = string.Empty;

@@ -27,6 +27,9 @@ namespace Bannerlord.RTSCameraLite.Config
                 ("Mode and policy", new[]
                 {
                     nameof(CommanderConfig.ConfigFileVersion),
+                    nameof(CommanderConfig.EnableMissionRuntimeHooks),
+                    nameof(CommanderConfig.EnableHarmonyPatches),
+                    nameof(CommanderConfig.EnableHarmonyDiagnostics),
                     nameof(CommanderConfig.StartBattlesInCommanderMode),
                     nameof(CommanderConfig.ModeActivationKey),
                     nameof(CommanderConfig.OverrideNativeBackspaceOrders),

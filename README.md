@@ -8,7 +8,7 @@
 
 ## What the mod does (today)
 
-- **Default install:** **Load-safe foundation** — the module loads, logs startup, and **does not attach `CommanderMissionView`** unless you opt in. Mission code (doctrine, camera shell, diagnostics, command router, etc.) ships in the DLL but stays **dormant** when **`EnableMissionRuntimeHooks`** is **`false`** in `config/commander_config.json` (the shipped default). Debug-heavy toggles default **off**.
+- **Default install:** **Load-safe foundation** — the module loads, logs startup, and **does not attach `CommanderMissionView`** unless you opt in. Mission code (doctrine, camera shell, diagnostics, command router, etc.) ships in the DLL but stays **dormant** when **`EnableMissionRuntimeHooks`** is **`false`** in `config/commander_config.json` (the shipped default). Debug-heavy toggles default **off**. **`Bannerlord.Harmony`** is listed in `SubModule.xml` (launcher dependency); **Harmony patches remain off** unless **`EnableHarmonyPatches`** and **`EnableMissionRuntimeHooks`** are both **true** (scaffold only — no patches registered yet).
 - **Experimental / unverified:** With hooks on, commander doctrine, RTS camera bridge, native-order routing, markers, and diagnostics are **candidate** behaviors — treat as **not in-game verified** until manual checklists are signed off. **Correct deployment (D1) does not guarantee battle stability** — runtime stability is a separate concern (Crash Quarantine defaults).
 - Ships **research and slice audits** under `docs/` so engine integration stays explicit and version-aware.
 
@@ -37,7 +37,7 @@ Bannerlord’s battles excel at spectacle and melee chaos, but **commander fanta
 - **C#**, .NET Framework compatible with Bannerlord’s client profile.
 - **MissionView** camera override hook (`UpdateOverridenCamera`) and **mission tick** logic.
 - **Adapter boundaries** for camera and orders (`CameraBridge`, order executor, future formation data adapter).
-- **No MCM / no mandatory Harmony** in the baseline philosophy (optional later, explicitly gated).
+- **Harmony:** declared dependency (**Bannerlord.Harmony**); **Lib.Harmony** is compile-only in the `.csproj` — **do not ship `0Harmony.dll`** with this mod (the Harmony module provides it). **No MCM** in baseline.
 
 ## Portfolio goal
 

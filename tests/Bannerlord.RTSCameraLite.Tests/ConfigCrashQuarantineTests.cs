@@ -1,4 +1,5 @@
 using System;
+using Bannerlord.RTSCameraLite.Adapters;
 using Bannerlord.RTSCameraLite.Config;
 using Xunit;
 
@@ -11,6 +12,8 @@ namespace Bannerlord.RTSCameraLite.Tests
         {
             CommanderConfig d = CommanderConfigDefaults.CreateDefault();
             Assert.False(d.EnableMissionRuntimeHooks);
+            Assert.False(d.EnableHarmonyPatches);
+            Assert.False(d.EnableHarmonyDiagnostics);
             Assert.False(d.StartBattlesInCommanderMode);
             Assert.False(d.EnableDiagnostics);
             Assert.False(d.EnableCommandMarkers);
@@ -86,6 +89,14 @@ namespace Bannerlord.RTSCameraLite.Tests
             }
 
             Assert.Null(caught);
+        }
+
+        [Fact]
+        public void HarmonyPatchService_UnpatchAll_WithoutApply_DoesNotThrow()
+        {
+            var s = new HarmonyPatchService();
+            s.UnpatchAll();
+            s.UnpatchAll();
         }
     }
 }

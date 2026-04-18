@@ -32,6 +32,7 @@ This roadmap aligns **design intent** with **incremental delivery**. Status labe
 | **P1** | Portfolio scaffold | **Shipped (docs)** | README + design + architecture + hiring + media plan + slice indexes. |
 | **D1** | Deployable package + Steam verification | **Shipped (docs + scripts)** | `docs/install.md`, `docs/deploy.md`, `scripts/package-module.ps1`, `scripts/audit-steam-deployment.ps1`, `scripts/deploy-to-steam.ps1`; research `docs/research/public-deployment-scan.md`, `local-steam-mod-scan.md`. |
 | **CQ1** | Crash quarantine — load-safe defaults | **Shipped** | `EnableMissionRuntimeHooks` fail-closed preflight; dormant debug/router/marker/native-order defaults; guarded `SubModule` / `CommanderMissionView`; `CommanderConfigService.TryReadMissionRuntimeHooksEnabledFailClosed()`. |
+| **H1** | Harmony integration scaffold v1 | **Shipped** | `DependedModule Bannerlord.Harmony`; compile-only **Lib.Harmony**; `HarmonyPatchService` + config gates (`EnableHarmonyPatches`, `EnableHarmonyDiagnostics`, both **false** default; requires `EnableMissionRuntimeHooks` for scaffold init); **zero patches**; research `docs/research/harmony-reference-scan.md`. |
 
 ---
 

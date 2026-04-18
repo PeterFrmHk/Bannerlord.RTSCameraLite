@@ -5,7 +5,8 @@
 ## Requirements
 
 - Mount & Blade II Bannerlord (Steam or other install with a `Modules` folder).
-- Official modules this mod depends on: **Native**, **SandBoxCore**, **Sandbox**, **StoryMode**, **CustomBattle** (see root `SubModule.xml`).
+- Official modules: **Native**, **SandBoxCore**, **Sandbox**, **StoryMode**, **CustomBattle** (see root `SubModule.xml`).
+- **Bannerlord.Harmony** (BUTR; e.g. Steam Workshop) — **required** for launcher dependency resolution and runtime **`0Harmony.dll`**. Install/load it **before** RTS Commander Doctrine in mod order (see `docs/research/local-bannerlord-load-order.md`).
 
 ## Correct layout
 
@@ -36,7 +37,7 @@ Target structure:
 
 ## Runtime safety (mission hooks — Crash Quarantine)
 
-- **Safe default:** `"EnableMissionRuntimeHooks": false` in `config/commander_config.json`. The mod **does not** add `CommanderMissionView` unless this is **explicitly** `true` and the config file is readable (fail-closed if missing, corrupt, or unreadable).
+- **Safe defaults:** `"EnableMissionRuntimeHooks": false`, **`"EnableHarmonyPatches": false`**, **`"EnableHarmonyDiagnostics": false`** in `config/commander_config.json`. Harmony **patches** do not run unless both **`EnableHarmonyPatches`** and **`EnableMissionRuntimeHooks`** are **true** (scaffold only; no engine patches in repo yet). Mission attachment: the mod **does not** add `CommanderMissionView` unless **`EnableMissionRuntimeHooks`** is **explicitly** `true` and the config file is readable (fail-closed if missing, corrupt, or unreadable).
 - **Mission runtime is experimental and opt-in.** Doctrine, diagnostics, command router, markers, and native-order execution toggles also default **off** in shipped config.
 - **Deployment success ≠ runtime stability.** A valid folder layout (see D1) does not prove battles are safe — **battle stability requires separate in-game verification** (manual checklists). If you crash after the main menu, keep hooks off and review `docs/configuration.md` before enabling features.
 

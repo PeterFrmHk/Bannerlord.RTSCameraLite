@@ -55,6 +55,7 @@
     <Compile Include="src\Commands\NativeOrderPrimitiveExecutor.cs" />
     <Compile Include="src\Adapters\FormationDataAdapter.cs" />
     <Compile Include="src\Adapters\FormationDataResult.cs" />
+    <Compile Include="src\Adapters\HarmonyPatchService.cs" />
     <Compile Include="src\Adapters\BackspaceConflictGuard.cs" />
     <Compile Include="src\Adapters\BackspaceConflictResult.cs" />
     <Compile Include="src\Camera\CommanderCameraPose.cs" />
@@ -138,6 +139,11 @@
 
   <ItemGroup>
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <!-- Compile-time Harmony API only; runtime 0Harmony is supplied by the Bannerlord.Harmony Workshop module. -->
+    <PackageReference Include="Lib.Harmony" Version="2.3.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>compile</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <Import Project="local.props" Condition="Exists('local.props')" />
@@ -210,6 +216,11 @@
     <None Include="SubModule.xml" />
     <None Include="config\commander_config.json" />
   </ItemGroup>
+
+  <Target Name="StripBundledHarmonyRuntime" AfterTargets="Build">
+    <!-- Lib.Harmony is compile-only; never ship 0Harmony alongside this mod (Bannerlord.Harmony provides it). -->
+    <Delete Files="$(OutputPath)0Harmony.dll" Condition="Exists('$(OutputPath)0Harmony.dll')" />
+  </Target>
 
   <Target Name="PackageModuleLayout" AfterTargets="Build">
     <PropertyGroup>

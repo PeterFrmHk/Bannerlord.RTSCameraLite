@@ -1,3 +1,4 @@
+using Bannerlord.RTSCameraLite.Adapters;
 using Bannerlord.RTSCameraLite.Config;
 using Bannerlord.RTSCameraLite.Core;
 using Bannerlord.RTSCameraLite.Mission;
@@ -10,6 +11,8 @@ namespace Bannerlord.RTSCameraLite
     /// </summary>
     public sealed class SubModule : MBSubModuleBase
     {
+        private HarmonyPatchService _harmonyPatchService;
+
         protected override void OnSubModuleLoad()
         {
             try
@@ -17,10 +20,50 @@ namespace Bannerlord.RTSCameraLite
                 base.OnSubModuleLoad();
                 ModLogger.LogDebug(
                     $"{ModConstants.ModuleId} loaded. Version {ModConstants.Version} ({ModConstants.LegacyShortName} codebase).");
+
+                TryApplyHarmonyScaffoldFailClosed();
             }
             catch (System.Exception ex)
             {
                 ModLogger.Warn($"{ModConstants.ModuleId}: OnSubModuleLoad guarded failure ({ex})");
+            }
+        }
+
+        protected override void OnSubModuleUnloaded()
+        {
+            try
+            {
+                _harmonyPatchService?.UnpatchAll();
+                _harmonyPatchService = null;
+            }
+            catch (System.Exception ex)
+            {
+                ModLogger.Warn($"{ModConstants.ModuleId}: OnSubModuleUnloaded Harmony cleanup ({ex})");
+            }
+
+            base.OnSubModuleUnloaded();
+        }
+
+        /// <summary>
+        /// Harmony is compile-time + optional runtime scaffold only: gated by config and requires mission hooks opt-in.
+        /// </summary>
+        private void TryApplyHarmonyScaffoldFailClosed()
+        {
+            try
+            {
+                ConfigLoadResult load = CommanderConfigService.LoadOrCreate();
+                CommanderConfig cfg = load.Config;
+                if (!cfg.EnableHarmonyPatches || !cfg.EnableMissionRuntimeHooks)
+                {
+                    return;
+                }
+
+                _harmonyPatchService = new HarmonyPatchService();
+                _harmonyPatchService.ApplyPatches(cfg.EnableHarmonyDiagnostics);
+            }
+            catch (System.Exception ex)
+            {
+                ModLogger.Warn($"{ModConstants.ModuleId}: Harmony scaffold skipped ({ex.Message})");
             }
         }
 

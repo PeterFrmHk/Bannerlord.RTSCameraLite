@@ -1,14 +1,16 @@
 # Dependency policy — RTS Commander Doctrine
 
-## Default: no hard third-party dependencies
+## Launcher / `SubModule.xml`
 
-- The shipped module is intended to run with **vanilla** dependencies declared in **`SubModule.xml`** only (see repository file for current list).
-- **No** mandatory requirement on **MCM**, **ButterLib**, **UIExtenderEx**, **Harmony**, or **BLSE** for the baseline build described in this repo.
+- **Official modules** remain required: Native, SandBoxCore, Sandbox, StoryMode, CustomBattle.
+- **Bannerlord.Harmony** (BUTR Workshop module id `Bannerlord.Harmony`) is a **declared dependency** so the launcher can resolve load order and supply **runtime `0Harmony.dll`** to the game. Install **Bannerlord.Harmony** before this mod (Workshop or equivalent).
+- **No** mandatory **MCM**, **ButterLib**, or **UIExtenderEx** for this mod’s baseline.
 
-## Harmony
+## Harmony (compile vs runtime)
 
-- **Avoid** unless Slice 0–class research shows **no** public alternative **and** maintainers accept the cost.
-- If Harmony is ever added: **one** assembly (or clearly bounded subfolder), **no** scattered patches, document **target type + reason** in a slice doc and in `known-failures.md` if behavior is fragile.
+- **Compile-time:** the project references **`Lib.Harmony`** NuGet with **compile-only** assets so **`0Harmony.dll` is not bundled** with this mod’s output; runtime Harmony comes from the **Bannerlord.Harmony** module.
+- **Runtime patches:** **`EnableHarmonyPatches`** defaults **false** in `commander_config.json`. When **false**, no Harmony instance is applied for patching. A future slice may register patches; they remain **off** until explicitly enabled and documented.
+- **Scaffold gate:** even when **`EnableHarmonyPatches`** is **true**, **`HarmonyPatchService`** only initializes after **`EnableMissionRuntimeHooks`** is **true** (same policy as mission experimental code). Scaffold v1 registers **zero** patches.
 
 ## Optional libraries (future)
 
@@ -18,7 +20,7 @@
 ## BLSE / external loaders
 
 - **BLSE** (Bannerlord Software Extender) or similar loaders are **optional** unless a future need appears (e.g. debugging hooks only available through such a host).
-- Players using BLSE should still report **game version + mod version**; loader version is secondary but welcome.
+- **ButterLib** may reference **`BLSE.AssemblyResolver`** in its own XML; that is unrelated to this mod’s dependency list unless we add ButterLib later.
 
 ## Native / TaleWorlds references
 

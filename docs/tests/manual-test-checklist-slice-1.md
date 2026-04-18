@@ -34,8 +34,9 @@
 
 ## 4. Main menu load test
 
-- [ ] Enable **RTS Commander Doctrine** with valid dependency order (`SubModule.xml`: Native, SandBoxCore, Sandbox, StoryMode, CustomBattle).
+- [ ] Enable **Bannerlord.Harmony** and **RTS Commander Doctrine** with valid dependency order (`SubModule.xml`: Native, SandBoxCore, Sandbox, StoryMode, CustomBattle, **Bannerlord.Harmony** before this mod per `docs/research/local-bannerlord-load-order.md`).
 - [ ] Start the game (singleplayer); reach **main menu** without crash.
+- [ ] **Harmony scaffold:** with defaults (`EnableHarmonyPatches` **false**), expect **no** Harmony patch activity from this mod. Launcher “dependency satisfied” for Harmony does **not** mean patches run.
 
 ---
 

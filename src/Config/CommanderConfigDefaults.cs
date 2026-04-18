@@ -18,6 +18,8 @@ namespace Bannerlord.RTSCameraLite.Config
             {
                 ConfigFileVersion = CommanderConfigSchema.CurrentConfigVersion,
                 EnableMissionRuntimeHooks = false,
+                EnableHarmonyPatches = false,
+                EnableHarmonyDiagnostics = false,
                 StartBattlesInCommanderMode = false,
                 ModeActivationKey = "Backspace",
                 OverrideNativeBackspaceOrders = true,
