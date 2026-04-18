@@ -12,7 +12,7 @@ This roadmap aligns **design intent** with **incremental delivery**. Status labe
 | --- | --- | --- | --- |
 | **0** | Base game + native command research | **Shipped (docs)** | `docs/research/base-game-camera-scan.md`, `base-game-order-scan.md`, `base-game-formation-layout-scan.md`, `native-order-hooks.md`, `native-cavalry-command-sequence.md`, `installed-mod-reference-scan.md`, `implementation-decision-slice0.md`, `camera-hooks.md`, `public-reference-scan.md`. |
 | **1** | Foundation + loadable module | **Shipped** | `docs/slices/slice-1-foundation.md`, `docs/tests/manual-test-checklist-slice-1.md`; load-safe defaults; mission runtime exists in code but is **opt-in** via `EnableMissionRuntimeHooks` (default **false**). |
-| **2** | Mission behavior shell | **Shipped** | `MissionView` behavior attached to missions. |
+| **2** | Mission behavior shell | **Shipped** | `CommanderMissionView` when **`EnableMissionRuntimeHooks`** is **true** (default **false** — not attached by default). |
 | **3** | Camera controller skeleton | **Shipped** | Pose / controller skeleton. |
 | **4** | Movement input + pose updates | **Shipped** | Input snapshot + pose integration. |
 | **5** | Real camera bridge + restore | **Shipped / hard-gated** | `docs/slices/slice-5-real-camera-bridge.md`, `docs/tests/manual-test-checklist-slice-5.md`; `src/Adapters/CameraBridge.cs` + `CommanderMissionView`; verify per `docs/slice-hard-gates.md`. |
@@ -31,6 +31,7 @@ This roadmap aligns **design intent** with **incremental delivery**. Status labe
 | **14** | Tactical feedback marker | **Shipped (early)** | Minimal markers / feedback; see historical `docs/slice-13-audit.md`. |
 | **P1** | Portfolio scaffold | **Shipped (docs)** | README + design + architecture + hiring + media plan + slice indexes. |
 | **D1** | Deployable package + Steam verification | **Shipped (docs + scripts)** | `docs/install.md`, `docs/deploy.md`, `scripts/package-module.ps1`, `scripts/audit-steam-deployment.ps1`, `scripts/deploy-to-steam.ps1`; research `docs/research/public-deployment-scan.md`, `local-steam-mod-scan.md`. |
+| **CQ1** | Crash quarantine — load-safe defaults | **Shipped** | `EnableMissionRuntimeHooks` fail-closed preflight; dormant debug/router/marker/native-order defaults; guarded `SubModule` / `CommanderMissionView`; `CommanderConfigService.TryReadMissionRuntimeHooksEnabledFailClosed()`. |
 
 ---
 

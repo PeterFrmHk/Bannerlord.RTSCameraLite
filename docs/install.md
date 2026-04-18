@@ -34,10 +34,11 @@ Target structure:
 4. Copy **`config\commander_config.json`** to `Modules\Bannerlord.RTSCameraLite\config\`.
 5. Enable the mod in the Bannerlord launcher with dependencies in a valid order.
 
-## Runtime safety (mission hooks)
+## Runtime safety (mission hooks — Crash Quarantine)
 
-- **Default load-safe install:** keep `"EnableMissionRuntimeHooks": false` in `config/commander_config.json` (shipped default). Mission runtime is **experimental** and opt-in.
-- **Deployment correctness does not guarantee runtime stability.** If the game crashes in battle after the main menu loads, review **Crash Quarantine** / config gates in repo docs and disable hooks before deeper debugging.
+- **Safe default:** `"EnableMissionRuntimeHooks": false` in `config/commander_config.json`. The mod **does not** add `CommanderMissionView` unless this is **explicitly** `true` and the config file is readable (fail-closed if missing, corrupt, or unreadable).
+- **Mission runtime is experimental and opt-in.** Doctrine, diagnostics, command router, markers, and native-order execution toggles also default **off** in shipped config.
+- **Deployment success ≠ runtime stability.** A valid folder layout (see D1) does not prove battles are safe — **battle stability requires separate in-game verification** (manual checklists). If you crash after the main menu, keep hooks off and review `docs/configuration.md` before enabling features.
 
 ## Easier path
 

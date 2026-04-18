@@ -8,8 +8,8 @@
 
 ## What the mod does (today)
 
-- **Default install:** **Load-safe foundation** — the module loads, logs startup, and **does not attach mission runtime** unless you opt in. Mission code (`CommanderMissionView`, doctrine, camera shell, diagnostics, etc.) ships in the DLL but stays **dormant** when `EnableMissionRuntimeHooks` is `false` in `config/commander_config.json` (the shipped default).
-- **Experimental / unverified:** Commander doctrine, RTS camera bridge, native-order routing, markers, and diagnostics are **candidate** behaviors — present in source and gated by config flags; treat as **not in-game verified** unless you complete the relevant manual checklists with a sign-off.
+- **Default install:** **Load-safe foundation** — the module loads, logs startup, and **does not attach `CommanderMissionView`** unless you opt in. Mission code (doctrine, camera shell, diagnostics, command router, etc.) ships in the DLL but stays **dormant** when **`EnableMissionRuntimeHooks`** is **`false`** in `config/commander_config.json` (the shipped default). Debug-heavy toggles default **off**.
+- **Experimental / unverified:** With hooks on, commander doctrine, RTS camera bridge, native-order routing, markers, and diagnostics are **candidate** behaviors — treat as **not in-game verified** until manual checklists are signed off. **Correct deployment (D1) does not guarantee battle stability** — runtime stability is a separate concern (Crash Quarantine defaults).
 - Ships **research and slice audits** under `docs/` so engine integration stays explicit and version-aware.
 
 **Deploy / install:** Use **`docs/deploy.md`** (package + audit + optional deploy scripts) or **`docs/install.md`** (manual copy checklist). Do **not** copy only the main DLL — copy the **entire** `bin/Win64_Shipping_Client` output from the build. Scripts: `scripts/package-module.ps1`, `scripts/audit-steam-deployment.ps1` (read-only), `scripts/deploy-to-steam.ps1` (optional; backs up existing module). Research: `docs/research/public-deployment-scan.md`, `docs/research/local-steam-mod-scan.md`.
@@ -20,7 +20,7 @@ Bannerlord’s battles excel at spectacle and melee chaos, but **commander fanta
 
 ## Current status
 
-- **Shipped in repo** means **code present**, not “proven in your build” unless a manual checklist is completed. **Default config** keeps **mission hooks off**, **commander mode auto-start off**, and **doctrine / diagnostics / router / markers / native-order paths off** until you enable them deliberately.
+- **Shipped in repo** means **code present**, not “proven in your build” unless a manual checklist is completed. **Default config** keeps **`EnableMissionRuntimeHooks` false**, **`StartBattlesInCommanderMode` false**, and doctrine / diagnostics / router / markers / native-order / performance-warning paths **off** until you enable them deliberately.
 - See `docs/slice-roadmap.md` and `docs/slices/README.md` for **shipped vs planned** doctrine work (default RTS battle entry remains a **design target**, not the default runtime).
 - **Display name** in `SubModule.xml` is **RTS Commander Doctrine** (v0.1.0-slice1); legacy short name remains in `ModConstants.LegacyShortName` for logs.
 

@@ -71,10 +71,11 @@ powershell -ExecutionPolicy Bypass -File scripts/deploy-to-steam.ps1 -GameRoot "
 
 ---
 
-## Runtime safety note
+## Runtime safety note (Crash Quarantine)
 
-- Keeping **`EnableMissionRuntimeHooks=false`** (default) is the **load-safe** baseline; see `config/commander_config.json`.
-- **Correct deployment does not guarantee** no battle-time crashes. If crashes occur after main menu loads, treat mission features as suspect: confirm hooks stay off, then follow **Crash Quarantine** / slice docs before enabling experimental options.
+- **`EnableMissionRuntimeHooks=false`** (default in committed `config/commander_config.json`) is the **load-safe** baseline: `SubModule` does not attach `CommanderMissionView` unless this flag is **true** and preflight read succeeds (otherwise **fail closed**).
+- **Audit PASS (D1) does not prove battle stability.** It verifies files and dependencies — not that every mission-time code path is safe on your game build.
+- If crashes occur **after** the main menu, keep hooks **off**, confirm shipped dormant defaults, then enable features one at a time per `docs/configuration.md` and slice checklists.
 
 ---
 

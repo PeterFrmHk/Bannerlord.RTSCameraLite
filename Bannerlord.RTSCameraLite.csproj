@@ -22,6 +22,9 @@
 
   <!-- Slice 10 doctrine; Slice 11 eligibility; Slice 12 rally/layout; Slice 13 cavalry doctrine; Slice 14 native order executor; Slice 15 command router; Slice 16 native cavalry orchestrator; Slice 19 command markers; Slice 20 diagnostics. -->
   <ItemGroup>
+    <!-- Deploy backups / MSBuild outputs under artifacts must not be compiled as source. -->
+    <Compile Remove="artifacts\**\*.cs" />
+    <Compile Remove="package\**\*.cs" />
     <Compile Remove="tests\**\*.cs" />
     <Compile Remove="src\**\*.cs" />
     <Compile Include="src\SubModule.cs" />

@@ -2,7 +2,9 @@
 
 **Mod:** RTS Commander Doctrine (`Bannerlord.RTSCameraLite`)  
 **Version:** `0.1.0-slice1`  
-**Goal:** Verify build, deployment layout, launcher, main menu, and battle load with **default mission runtime hooks disabled**. Optional: opt-in experimental mission runtime.
+**Goal:** Verify build, deployment layout, launcher, main menu, and battle load with **default mission runtime hooks disabled** (`EnableMissionRuntimeHooks`: **false** — Crash Quarantine / CQ1). Optional: opt-in experimental mission runtime.
+
+**Note:** Passing deployment audit (D1) does not replace **in-game** battle verification; treat battle stability as a separate sign-off.
 
 ---
 
