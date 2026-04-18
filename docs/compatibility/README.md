@@ -36,3 +36,5 @@ This folder documents **how the mod coexists** with Bannerlord, other modules, a
 | [`version-support.md`](version-support.md) | Game vs ref assembly vs tested matrix |
 
 Slice overview: [`../slices/slice-25-compatibility-load-order-notes.md`](../slices/slice-25-compatibility-load-order-notes.md).
+
+Public zip / module folder checklist: [`../release/public-packaging-plan.md`](../release/public-packaging-plan.md).
