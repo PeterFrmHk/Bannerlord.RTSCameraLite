@@ -16,7 +16,7 @@ This repository uses **vertical slices**: each slice delivers a **small, testabl
 Some slices touch fragile engine surfaces. See **`docs/slice-hard-gates.md`** before implementing:
 
 - **Slice 5** — real camera apply + restore  
-- **Slice 12** — native order execution  
+- **Slice 12 (roadmap alternate)** — native order execution (see `docs/slice-12-audit.md`; hard gate)
 
 ## Slice docs under `docs/slices/`
 
@@ -30,6 +30,9 @@ Some slices touch fragile engine surfaces. See **`docs/slice-hard-gates.md`** be
 | 7 | [`slice-7-backspace-conflict-input-ownership.md`](slice-7-backspace-conflict-input-ownership.md) — Backspace policy + ownership state; manual checklist [`manual-test-checklist-slice-7.md`](../tests/manual-test-checklist-slice-7.md) |
 | 8 | [`slice-8-commander-presence-model.md`](slice-8-commander-presence-model.md) — commander presence detection; `CommanderAssignmentService` |
 | 9 | [`slice-9-commander-anchor-behind-formation.md`](slice-9-commander-anchor-behind-formation.md) — anchor behind formation (compute only); manual checklist [`manual-test-checklist-slice-9.md`](../tests/manual-test-checklist-slice-9.md) |
+| 10 | [`slice-10-formation-doctrine-profile.md`](slice-10-formation-doctrine-profile.md); manual checklist [`manual-test-checklist-slice-10.md`](../tests/manual-test-checklist-slice-10.md) |
+| 11 | [`slice-11-formation-eligibility-rules.md`](slice-11-formation-eligibility-rules.md); manual checklist [`manual-test-checklist-slice-11.md`](../tests/manual-test-checklist-slice-11.md) |
+| 12 | [`slice-12-commander-rally-absorption-model.md`](slice-12-commander-rally-absorption-model.md) — rally bands + layout planning only; manual checklist [`manual-test-checklist-slice-12.md`](../tests/manual-test-checklist-slice-12.md) |
 
 ## Slice audit index (repository root)
 

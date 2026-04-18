@@ -63,5 +63,13 @@
   "MinimumPolearmOrShieldRatioForSquare": 0.45,
   "MinimumMountedRatioForMountedWide": 0.60,
   "MinimumHorseArcherRatioForHorseArcherLoose": 0.45,
-  "EnableEligibilityDebug": true
+  "EnableEligibilityDebug": true,
+
+  "CommanderRallyRadius": 25.0,
+  "CommanderAbsorptionRadius": 10.0,
+  "FormationSlotRadius": 2.0,
+  "CohesionBreakRadius": 35.0,
+  "SlotReassignmentCooldownSeconds": 3.0,
+  "RallyScanIntervalSeconds": 3.0,
+  "EnableRallyAbsorptionDebug": true
 }

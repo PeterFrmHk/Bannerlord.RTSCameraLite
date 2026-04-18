@@ -81,7 +81,15 @@ namespace Bannerlord.RTSCameraLite.Config
                 CohesionBreakRadius = 35.0f,
                 SlotReassignmentCooldownSeconds = 3.0f,
                 RallyScanIntervalSeconds = 3.0f,
-                EnableRallyAbsorptionDebug = true
+                EnableRallyAbsorptionDebug = true,
+                EnableCommandRouter = true,
+                EnableCommandValidationDebug = true,
+                AllowBasicChargeWithoutAdvancedDoctrine = true,
+                AllowNoCommanderBasicHold = true,
+                AllowNoCommanderBasicFollow = true,
+                BlockAdvancedCommandsWithoutCommander = true,
+                EnableNativePrimitiveOrderExecution = false,
+                CommandValidationDebugLogIntervalSeconds = 0.4f
             };
         }
 
@@ -201,6 +209,80 @@ namespace Bannerlord.RTSCameraLite.Config
                    && c.CasualtyShockPenaltyWeight == 0f
                    && !c.EnableDoctrineDebug
                    && c.DoctrineScanIntervalSeconds == 0f;
+        }
+
+        /// <summary>
+        /// Older JSON omits Slice 12 rally keys — floats deserialize to 0 and booleans to false.
+        /// </summary>
+        public static void HarmonizeLegacyRallyFields(CommanderConfig config)
+        {
+            if (config == null)
+            {
+                return;
+            }
+
+            if (!LooksLikeUnsetSlice12Rally(config))
+            {
+                return;
+            }
+
+            CommanderConfig d = CreateDefault();
+            config.CommanderRallyRadius = d.CommanderRallyRadius;
+            config.CommanderAbsorptionRadius = d.CommanderAbsorptionRadius;
+            config.FormationSlotRadius = d.FormationSlotRadius;
+            config.CohesionBreakRadius = d.CohesionBreakRadius;
+            config.SlotReassignmentCooldownSeconds = d.SlotReassignmentCooldownSeconds;
+            config.RallyScanIntervalSeconds = d.RallyScanIntervalSeconds;
+            config.EnableRallyAbsorptionDebug = d.EnableRallyAbsorptionDebug;
+        }
+
+        private static bool LooksLikeUnsetSlice12Rally(CommanderConfig c)
+        {
+            return c.CommanderRallyRadius == 0f
+                   && c.CommanderAbsorptionRadius == 0f
+                   && c.FormationSlotRadius == 0f
+                   && c.CohesionBreakRadius == 0f
+                   && c.SlotReassignmentCooldownSeconds == 0f
+                   && c.RallyScanIntervalSeconds == 0f
+                   && !c.EnableRallyAbsorptionDebug;
+        }
+
+        /// <summary>
+        /// Older JSON omits Slice 15 keys — booleans default false, floats to 0.
+        /// </summary>
+        public static void HarmonizeLegacyCommandRouterFields(CommanderConfig config)
+        {
+            if (config == null)
+            {
+                return;
+            }
+
+            if (!LooksLikeUnsetSlice15CommandRouter(config))
+            {
+                return;
+            }
+
+            CommanderConfig d = CreateDefault();
+            config.EnableCommandRouter = d.EnableCommandRouter;
+            config.EnableCommandValidationDebug = d.EnableCommandValidationDebug;
+            config.AllowBasicChargeWithoutAdvancedDoctrine = d.AllowBasicChargeWithoutAdvancedDoctrine;
+            config.AllowNoCommanderBasicHold = d.AllowNoCommanderBasicHold;
+            config.AllowNoCommanderBasicFollow = d.AllowNoCommanderBasicFollow;
+            config.BlockAdvancedCommandsWithoutCommander = d.BlockAdvancedCommandsWithoutCommander;
+            config.EnableNativePrimitiveOrderExecution = d.EnableNativePrimitiveOrderExecution;
+            config.CommandValidationDebugLogIntervalSeconds = d.CommandValidationDebugLogIntervalSeconds;
+        }
+
+        private static bool LooksLikeUnsetSlice15CommandRouter(CommanderConfig c)
+        {
+            return !c.EnableCommandRouter
+                   && !c.EnableCommandValidationDebug
+                   && !c.AllowBasicChargeWithoutAdvancedDoctrine
+                   && !c.AllowNoCommanderBasicHold
+                   && !c.AllowNoCommanderBasicFollow
+                   && !c.BlockAdvancedCommandsWithoutCommander
+                   && !c.EnableNativePrimitiveOrderExecution
+                   && c.CommandValidationDebugLogIntervalSeconds == 0f;
         }
     }
 }

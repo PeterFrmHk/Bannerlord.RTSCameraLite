@@ -6,6 +6,7 @@ using Bannerlord.RTSCameraLite.Commander;
 using Bannerlord.RTSCameraLite.Config;
 using Bannerlord.RTSCameraLite.Core;
 using Bannerlord.RTSCameraLite.Doctrine;
+using Bannerlord.RTSCameraLite.Equipment;
 using Bannerlord.RTSCameraLite.Input;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.View.MissionViews;
@@ -41,6 +42,12 @@ namespace Bannerlord.RTSCameraLite.Mission
         private CommanderAnchorSettings _anchorSettings;
         private float _anchorScanAccum;
         private const float CommanderAnchorScanIntervalSeconds = 2f;
+        private CommanderRallyPlanner _commanderRallyPlanner;
+        private TroopAbsorptionController _troopAbsorptionController;
+        private RowRankSlotAssigner _rowRankSlotAssigner;
+        private CommanderRallySettings _commanderRallySettings;
+        private float _rallyScanAccum;
+        private float _absorptionMissionTime;
 
         public CommanderModeState CommanderModeState => _commanderModeState;
 
@@ -84,6 +91,11 @@ namespace Bannerlord.RTSCameraLite.Mission
             _anchorResolver = new CommanderAnchorResolver(_formationDataAdapter);
             _anchorSettings = CommanderAnchorSettings.FromConfig(_commanderConfig);
             _anchorScanAccum = CommanderAnchorScanIntervalSeconds;
+            _commanderRallyPlanner = new CommanderRallyPlanner(_formationDataAdapter);
+            _troopAbsorptionController = new TroopAbsorptionController();
+            _rowRankSlotAssigner = new RowRankSlotAssigner(_formationDataAdapter);
+            _commanderRallySettings = CommanderRallySettings.FromConfig(_commanderConfig);
+            _rallyScanAccum = System.Math.Max(0.1f, _commanderRallySettings.RallyScanIntervalSeconds);
             _commanderPresenceScanTimer = CommanderPresenceScanIntervalSeconds;
             LogShellActiveOnce();
             LogEnabledTransition();
@@ -104,8 +116,10 @@ namespace Bannerlord.RTSCameraLite.Mission
                 return;
             }
 
+            _absorptionMissionTime += dt;
             MaybeScanFriendlyFormationCommanders(dt);
             MaybeScanDoctrineProfiles(dt);
+            MaybeScanRallyAbsorption(dt);
 
             bool toggle = _commanderInput.TryConsumeCommanderModeToggle(Input);
             if (!toggle)
@@ -203,6 +217,106 @@ namespace Bannerlord.RTSCameraLite.Mission
             }
 
             ModLogger.LogDebug($"{ModConstants.ModuleId}: Commander scan: {commanded}/{total} formations commanded");
+        }
+
+        /// <summary>
+        /// Slice 12 — rally/absorption and slot planning only (no native orders, no forced movement).
+        /// </summary>
+        private void MaybeScanRallyAbsorption(float dt)
+        {
+            if (_commanderRallyPlanner == null
+                || _troopAbsorptionController == null
+                || _rowRankSlotAssigner == null
+                || _commanderRallySettings == null
+                || _formationEligibilityRules == null
+                || _doctrineScoreCalculator == null
+                || _commanderAssignmentService == null
+                || Mission?.PlayerTeam == null)
+            {
+                return;
+            }
+
+            float interval = System.Math.Max(0.5f, _commanderRallySettings.RallyScanIntervalSeconds);
+            _rallyScanAccum += dt;
+            if (_rallyScanAccum < interval)
+            {
+                return;
+            }
+
+            _rallyScanAccum = 0f;
+            DoctrineScoreSettings doctrineSettings = DoctrineScoreSettings.FromConfig(_commanderConfig);
+
+            try
+            {
+                foreach (Formation formation in Mission.PlayerTeam.FormationsIncludingEmpty)
+                {
+                    if (formation == null || formation.CountOfUnits <= 0)
+                    {
+                        continue;
+                    }
+
+                    CommanderPresenceResult presence = _commanderAssignmentService.DetectCommander(Mission, formation);
+                    CommanderAnchorState anchor = _anchorResolver != null
+                        ? _anchorResolver.ResolveAnchor(Mission, formation, presence, _anchorSettings)
+                        : CommanderAnchorState.None("anchor resolver null");
+                    DoctrineScoreResult doctrineRes = _doctrineScoreCalculator.Compute(
+                        Mission,
+                        formation,
+                        presence,
+                        doctrineSettings);
+                    if (!doctrineRes.ComputationSucceeded || doctrineRes.Profile == null)
+                    {
+                        continue;
+                    }
+
+                    FormationEligibilityResult elig = _formationEligibilityRules.Evaluate(formation, presence, doctrineRes.Profile);
+                    FormationCompositionProfile comp = FormationCompositionAnalyzer.Analyze(_formationDataAdapter, formation);
+                    RowRankSpacingPlan plan = FormationLayoutPlanner.Build(
+                        formation,
+                        doctrineRes.Profile,
+                        elig,
+                        comp,
+                        presence);
+
+                    CommanderRallyState rallyProbe = _commanderRallyPlanner.BuildRallyState(
+                        Mission,
+                        formation,
+                        presence,
+                        anchor,
+                        _commanderRallySettings,
+                        null);
+
+                    _troopAbsorptionController.SyncFormation(
+                        Mission,
+                        formation,
+                        presence,
+                        rallyProbe.RallyPoint,
+                        _commanderRallySettings,
+                        _absorptionMissionTime,
+                        plan,
+                        _rowRankSlotAssigner,
+                        _formationDataAdapter);
+
+                    CommanderRallyState rallyFinal = _commanderRallyPlanner.BuildRallyState(
+                        Mission,
+                        formation,
+                        presence,
+                        anchor,
+                        _commanderRallySettings,
+                        _troopAbsorptionController);
+
+                    if (_commanderConfig.EnableRallyAbsorptionDebug)
+                    {
+                        string label = formation.RepresentativeClass.ToString();
+                        ModLogger.LogDebug(
+                            $"{ModConstants.ModuleId}: Rally absorption: {label} {rallyFinal.TotalTroops} total, {rallyFinal.AbsorbableTroops} absorbable, {rallyFinal.AssignedTroops} assigned.");
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: Rally absorption scan skipped ({ex.Message})");
+            }
         }
 
         private void MaybeScanDoctrineProfiles(float dt)
@@ -457,6 +571,9 @@ namespace Bannerlord.RTSCameraLite.Mission
             _commanderPresenceScanTimer = 0f;
             _anchorScanAccum = 0f;
             _doctrineScanAccum = 0f;
+            _rallyScanAccum = 0f;
+            _absorptionMissionTime = 0f;
+            _troopAbsorptionController?.Clear();
             _cameraController.Reset();
         }
 

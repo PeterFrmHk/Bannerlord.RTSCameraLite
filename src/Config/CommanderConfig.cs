@@ -153,5 +153,28 @@ namespace Bannerlord.RTSCameraLite.Config
         public float RallyScanIntervalSeconds { get; set; }
 
         public bool EnableRallyAbsorptionDebug { get; set; }
+
+        // Slice 15 — command router + formation restriction (validation before native execution).
+
+        public bool EnableCommandRouter { get; set; }
+
+        public bool EnableCommandValidationDebug { get; set; }
+
+        public bool AllowBasicChargeWithoutAdvancedDoctrine { get; set; }
+
+        public bool AllowNoCommanderBasicHold { get; set; }
+
+        public bool AllowNoCommanderBasicFollow { get; set; }
+
+        public bool BlockAdvancedCommandsWithoutCommander { get; set; }
+
+        /// <summary>
+        /// When true, <see cref="Commands.CommandRouter.Decide"/> may call <see cref="Adapters.NativeOrderPrimitiveExecutor"/> after validation.
+        /// Default false: validation-only unless explicitly enabled.
+        /// </summary>
+        public bool EnableNativePrimitiveOrderExecution { get; set; }
+
+        /// <summary>Minimum seconds between debug validation log lines (Slice 15).</summary>
+        public float CommandValidationDebugLogIntervalSeconds { get; set; }
     }
 }

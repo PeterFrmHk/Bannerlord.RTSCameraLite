@@ -11,7 +11,7 @@
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
     <FileVersion>0.1.0.0</FileVersion>
-    <InformationalVersion>0.1.0-slice10</InformationalVersion>
+    <InformationalVersion>0.1.0-slice12</InformationalVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -19,7 +19,7 @@
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
   </PropertyGroup>
 
-  <!-- Slice 10: doctrine profile + equipment composition; Slice 11: eligibility rules. -->
+  <!-- Slice 10: doctrine; Slice 11: eligibility; Slice 12: rally absorption + layout planning (no orders). -->
   <ItemGroup>
     <Compile Remove="src\**\*.cs" />
     <Compile Include="src\SubModule.cs" />
@@ -55,6 +55,10 @@
     <Compile Include="src\Commander\CommanderAnchorResolver.cs" />
     <Compile Include="src\Commander\CommanderAnchorSettings.cs" />
     <Compile Include="src\Commander\CommanderAnchorState.cs" />
+    <Compile Include="src\Commander\CommanderAbsorptionZone.cs" />
+    <Compile Include="src\Commander\CommanderRallyPlanner.cs" />
+    <Compile Include="src\Commander\CommanderRallySettings.cs" />
+    <Compile Include="src\Commander\CommanderRallyState.cs" />
     <Compile Include="src\Equipment\EquipmentRole.cs" />
     <Compile Include="src\Equipment\FormationCompositionProfile.cs" />
     <Compile Include="src\Equipment\EquipmentRoleClassifier.cs" />
@@ -68,6 +72,13 @@
     <Compile Include="src\Doctrine\FormationEligibilitySettings.cs" />
     <Compile Include="src\Doctrine\FormationEligibilityResult.cs" />
     <Compile Include="src\Doctrine\FormationEligibilityRules.cs" />
+    <Compile Include="src\Doctrine\FormationLayoutPlanner.cs" />
+    <Compile Include="src\Doctrine\FormationSlotAssignment.cs" />
+    <Compile Include="src\Doctrine\RowRankSpacingPlan.cs" />
+    <Compile Include="src\Doctrine\RowRankSlotAssigner.cs" />
+    <Compile Include="src\Doctrine\TroopAbsorptionController.cs" />
+    <Compile Include="src\Doctrine\TroopAbsorptionRecord.cs" />
+    <Compile Include="src\Doctrine\TroopFormationState.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -103,6 +103,8 @@ namespace Bannerlord.RTSCameraLite.Config
                 CommanderConfigDefaults.HarmonizeLegacyDoctrineFields(parsed);
                 ApplyOmittedSlice11EligibilityDefaults(json, parsed);
                 CommanderConfigDefaults.HarmonizeLegacyEligibilityFields(parsed);
+                ApplyOmittedSlice12RallyDefaults(json, parsed);
+                CommanderConfigDefaults.HarmonizeLegacyRallyFields(parsed);
 
                 return new ConfigLoadResult(
                     loaded: true,
@@ -319,6 +321,67 @@ namespace Bannerlord.RTSCameraLite.Config
         /// <summary>
         /// Omitted Slice 11 keys deserialize to 0 / false — restore defaults when absent from JSON.
         /// </summary>
+        /// <summary>
+        /// Omitted Slice 12 keys deserialize to 0 / false — restore rally defaults when absent from JSON.
+        /// </summary>
+        private static void ApplyOmittedSlice12RallyDefaults(string json, CommanderConfig parsed)
+        {
+            if (parsed == null || string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            try
+            {
+                using JsonDocument doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                JsonElement root = doc.RootElement;
+                CommanderConfig d = CommanderConfigDefaults.CreateDefault();
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CommanderRallyRadius)))
+                {
+                    parsed.CommanderRallyRadius = d.CommanderRallyRadius;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CommanderAbsorptionRadius)))
+                {
+                    parsed.CommanderAbsorptionRadius = d.CommanderAbsorptionRadius;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.FormationSlotRadius)))
+                {
+                    parsed.FormationSlotRadius = d.FormationSlotRadius;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CohesionBreakRadius)))
+                {
+                    parsed.CohesionBreakRadius = d.CohesionBreakRadius;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.SlotReassignmentCooldownSeconds)))
+                {
+                    parsed.SlotReassignmentCooldownSeconds = d.SlotReassignmentCooldownSeconds;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.RallyScanIntervalSeconds)))
+                {
+                    parsed.RallyScanIntervalSeconds = d.RallyScanIntervalSeconds;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableRallyAbsorptionDebug)))
+                {
+                    parsed.EnableRallyAbsorptionDebug = d.EnableRallyAbsorptionDebug;
+                }
+            }
+            catch
+            {
+                // Ignore merge failures.
+            }
+        }
+
         private static void ApplyOmittedSlice11EligibilityDefaults(string json, CommanderConfig parsed)
         {
             if (parsed == null || string.IsNullOrWhiteSpace(json))
