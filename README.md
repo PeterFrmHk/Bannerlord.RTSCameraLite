@@ -8,9 +8,8 @@
 
 ## What the mod does (today)
 
-- Loads as a single-player Bannerlord module.
-- Provides an **RTS-style mission camera** path (mission view, pose, input, bridge research) and **tactical command validation and issuance** primitives grounded in **public** `OrderController` / formation APIs where possible.
-- Uses **JSON configuration** for keys and camera feel.
+- **Slice 1 (current compile):** Loads as a single-player Bannerlord module with **foundation only** — `SubModule` logging and **no mission behaviors** registered. See `docs/slices/slice-1-foundation.md`.
+- **Later slices (sources present, not in Slice 1 build):** RTS-style mission camera path, tactical command validation/issuance, JSON config — re-enabled when the csproj compile list is expanded.
 - Ships **research and slice audits** under `docs/` so engine integration stays explicit and version-aware.
 
 ## Why it exists
@@ -21,7 +20,7 @@ Bannerlord’s battles excel at spectacle and melee chaos, but **commander fanta
 
 - **Playable / engineering slices:** Foundation through **native order execution**, **ground targeting**, and **minimal command feedback** are in active development; see `docs/slice-roadmap.md` and `docs/slices/README.md` for the honest split between **shipped behavior** and **planned doctrine**.
 - **Doctrine slices** (default RTS entry, Backspace policy, commander nucleus, rally/absorption, cavalry sequence): **planned**—documented in design and architecture files, not claimed as finished gameplay.
-- **Display name in `SubModule.xml` may read “RTS Camera Lite”** until a future release pass aligns packaging with the doctrine title.
+- **Display name** in `SubModule.xml` is **RTS Commander Doctrine** (v0.1.0-slice1); legacy short name remains in `ModConstants.LegacyShortName` for logs.
 
 ## Feature pillars (target)
 

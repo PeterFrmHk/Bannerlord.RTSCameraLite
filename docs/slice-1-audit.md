@@ -1,5 +1,7 @@
 # Slice 1 Audit: Foundation + Loadable Module
 
+**Companion:** [`slices/slice-1-foundation.md`](slices/slice-1-foundation.md) · **Manual tests:** [`tests/manual-test-checklist-slice-1.md`](tests/manual-test-checklist-slice-1.md)
+
 ## Purpose
 
 Establish a single-player Bannerlord module that builds, can be deployed under `Modules`, loads in the launcher, and survives a custom battle without adding RTS camera, Harmony, or meaningful mission logic.
@@ -18,7 +20,7 @@ Establish a single-player Bannerlord module that builds, can be deployed under `
 ## Tests
 
 - Automated: `dotnet build` (NuGet refs) or build against local `bin\Win64_Shipping_Client` when `BannerlordGameFolder` is set.
-- Manual: see `docs/manual-test-checklist.md` and Slice 1 done criteria below.
+- Manual: **`docs/tests/manual-test-checklist-slice-1.md`** (and `docs/manual-test-checklist.md` for repo-wide notes) and Slice 1 done criteria below.
 
 ## Slice 1 done criteria (authoritative)
 

@@ -10,8 +10,8 @@ This roadmap aligns **design intent** with **incremental delivery**. Status labe
 
 | Slice | Name | Status | Notes |
 | --- | --- | --- | --- |
-| **0** | Base game + native command research | **Shipped (docs)** | `docs/research/base-game-camera-scan.md`, `base-game-order-scan.md`, `native-order-hooks.md`, `installed-mod-reference-scan.md`, `camera-hooks.md`, `public-reference-scan.md`. |
-| **1** | Foundation + loadable module | **Shipped** | Module load, `SubModule.xml`, build output layout. |
+| **0** | Base game + native command research | **Shipped (docs)** | `docs/research/base-game-camera-scan.md`, `base-game-order-scan.md`, `base-game-formation-layout-scan.md`, `native-order-hooks.md`, `native-cavalry-command-sequence.md`, `installed-mod-reference-scan.md`, `implementation-decision-slice0.md`, `camera-hooks.md`, `public-reference-scan.md`. |
+| **1** | Foundation + loadable module | **Shipped** | `docs/slices/slice-1-foundation.md`, `docs/tests/manual-test-checklist-slice-1.md`; `SubModule.xml` + minimal `SubModule` / `ModConstants` / `ModLogger` (other `src/` excluded from compile until later slices). |
 | **2** | Mission behavior shell | **Shipped** | `MissionView` behavior attached to missions. |
 | **3** | Camera controller skeleton | **Shipped** | Pose / controller skeleton. |
 | **4** | Movement input + pose updates | **Shipped** | Input snapshot + pose integration. |

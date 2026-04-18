@@ -18,6 +18,12 @@ Some slices touch fragile engine surfaces. See **`docs/slice-hard-gates.md`** be
 - **Slice 5** — real camera apply + restore  
 - **Slice 12** — native order execution  
 
+## Slice docs under `docs/slices/`
+
+| Slice | Foundation / notes |
+| --- | --- |
+| 1 | [`slice-1-foundation.md`](slice-1-foundation.md) — loadable module only |
+
 ## Slice audit index (repository root)
 
 Audit files live under `docs/` (historical layout):

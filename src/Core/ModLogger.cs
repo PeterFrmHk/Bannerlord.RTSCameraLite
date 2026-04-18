@@ -2,7 +2,10 @@ using TaleWorlds.Library;
 
 namespace Bannerlord.RTSCameraLite.Core
 {
-    internal static class ModLogger
+    /// <summary>
+    /// Safe logging: never throws; InformationManager only after UI is marked ready.
+    /// </summary>
+    public static class ModLogger
     {
         private static bool _uiReady;
 
@@ -12,23 +15,23 @@ namespace Bannerlord.RTSCameraLite.Core
         }
 
         /// <summary>
-        /// Diagnostic text only (never raises to InformationManager).
+        /// Diagnostic only (never uses InformationManager).
         /// </summary>
         public static void LogDebug(string message)
         {
             try
             {
-                string formatted = $"[{ModConstants.DisplayName}] {message}";
+                string formatted = $"[{ModConstants.ModuleId}] {message}";
                 System.Diagnostics.Debug.WriteLine(formatted);
             }
             catch
             {
-                // Swallow: logging must never crash the game.
+                // Logging must never crash the game.
             }
         }
 
         /// <summary>
-        /// Player-visible when <paramref name="allowUi"/> and UI are ready; always mirrors to debug output when possible.
+        /// Player-visible only when <paramref name="allowUi"/> is true and UI has been marked ready.
         /// </summary>
         public static void PlayerMessage(string message, bool allowUi)
         {
@@ -43,17 +46,14 @@ namespace Bannerlord.RTSCameraLite.Core
                 // Ignore debug sink failures.
             }
 
-            if (!allowUi)
+            if (!allowUi || !_uiReady)
             {
                 return;
             }
 
             try
             {
-                if (_uiReady)
-                {
-                    InformationManager.DisplayMessage(new InformationMessage(formatted));
-                }
+                InformationManager.DisplayMessage(new InformationMessage(formatted));
             }
             catch
             {
@@ -62,13 +62,16 @@ namespace Bannerlord.RTSCameraLite.Core
         }
 
         /// <summary>
-        /// UI path: only uses InformationManager after the initial module screen is available.
+        /// InformationManager path (guarded by UI readiness).
         /// </summary>
         public static void Info(string message)
         {
             PlayerMessage(message, allowUi: true);
         }
 
+        /// <summary>
+        /// Startup line: safe before UI (debug only); after <see cref="MarkUiReady"/> also mirrors to UI when allowed.
+        /// </summary>
         public static void SafeStartupLog(string message)
         {
             PlayerMessage(message, allowUi: true);

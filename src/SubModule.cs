@@ -1,17 +1,19 @@
 using Bannerlord.RTSCameraLite.Core;
-using Bannerlord.RTSCameraLite.Mission;
 using TaleWorlds.MountAndBlade;
 
 namespace Bannerlord.RTSCameraLite
 {
+    /// <summary>
+    /// Slice 1: loadable module entry only. No mission behaviors registered yet.
+    /// </summary>
     public sealed class SubModule : MBSubModuleBase
     {
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
 
-            ModLogger.SafeStartupLog(
-                $"{ModConstants.ModuleId} loaded. Version {ModConstants.Version}."
+            ModLogger.LogDebug(
+                $"{ModConstants.ModuleId} loaded. Version {ModConstants.Version} ({ModConstants.LegacyShortName} codebase)."
             );
         }
 
@@ -21,19 +23,17 @@ namespace Bannerlord.RTSCameraLite
 
             ModLogger.MarkUiReady();
 
+            ModLogger.LogDebug($"{ModConstants.ModuleId} UI ready.");
+
             ModLogger.SafeStartupLog(
-                $"{ModConstants.DisplayName} foundation initialized."
+                $"{ModConstants.DisplayName} v{ModConstants.Version} — foundation active."
             );
         }
 
-        public override void OnMissionBehaviorInitialize(TaleWorlds.MountAndBlade.Mission mission)
+        public override void OnMissionBehaviorInitialize(Mission mission)
         {
             base.OnMissionBehaviorInitialize(mission);
-
-            if (MissionModeGate.IsSupportedMission(mission))
-            {
-                mission.AddMissionBehavior(new RTSCameraMissionBehavior());
-            }
+            // Slice 1: intentionally no AddMissionBehavior — camera / doctrine ship in later slices.
         }
     }
 }

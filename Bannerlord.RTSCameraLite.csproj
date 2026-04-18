@@ -15,6 +15,14 @@
     <InformationalVersion>0.1.0-slice1</InformationalVersion>
   </PropertyGroup>
 
+  <!-- Slice 1: compile foundation sources only. Re-expand includes in later slices. -->
+  <ItemGroup>
+    <Compile Remove="src\**\*.cs" />
+    <Compile Include="src\SubModule.cs" />
+    <Compile Include="src\Core\ModConstants.cs" />
+    <Compile Include="src\Core\ModLogger.cs" />
+  </ItemGroup>
+
   <!-- Optional: set BannerlordGameFolder in local.props or env BANNERLORD_INSTALL -->
   <Import Project="local.props" Condition="Exists('local.props')" />
 
@@ -22,7 +30,7 @@
     <BannerlordGameFolder Condition="'$(BannerlordGameFolder)' == ''">$(BANNERLORD_INSTALL)</BannerlordGameFolder>
   </PropertyGroup>
 
-  <!-- Prefer local game binaries when BannerlordGameFolder is set; otherwise use NuGet metadata refs. -->
+  <!-- Prefer local game binaries when BannerlordGameFolder is set. View DLL may live under Modules\Native\bin on some installs. -->
   <ItemGroup Condition="'$(BannerlordGameFolder)' != ''">
     <Reference Include="TaleWorlds.Library">
       <HintPath>$(BannerlordGameFolder)\bin\Win64_Shipping_Client\TaleWorlds.Library.dll</HintPath>
@@ -30,10 +38,6 @@
     </Reference>
     <Reference Include="TaleWorlds.MountAndBlade">
       <HintPath>$(BannerlordGameFolder)\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="TaleWorlds.MountAndBlade.View">
-      <HintPath>$(BannerlordGameFolder)\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.View.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
@@ -44,12 +48,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="8.0.5" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Include="SubModule.xml">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 </Project>
