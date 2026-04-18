@@ -16,15 +16,12 @@
   Run Unblock-File on all DLLs under the deployed module.
 
 .PARAMETER WhatIf
-  Show what would happen without copying.
-
-.PARAMETER DryRun
-  Alias for WhatIf.
+  Show what would happen without copying (same as common -WhatIf; do not combine with SupportsShouldProcess to avoid duplicate parameters).
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts/deploy-to-steam.ps1 -GameRoot "C:\Program Files (x86)\Steam\steamapps\common\Mount & Blade II Bannerlord" -UnblockDlls
 #>
-[CmdletBinding(SupportsShouldProcess = $true)]
+[CmdletBinding()]
 param(
     [string]$GameRoot = "",
 
@@ -34,10 +31,7 @@ param(
 
     [switch]$UnblockDlls,
 
-    [switch]$WhatIf,
-
-    [Alias("DryRun")]
-    [switch]$DryRun
+    [switch]$WhatIf
 )
 
 $ErrorActionPreference = "Stop"
@@ -80,10 +74,7 @@ function Find-GameRoot {
     return $null
 }
 
-$whatIfMode = $WhatIf -or $DryRun
-if ($whatIfMode) {
-    $PSCmdlet.ShouldProcess("deploy", "WhatIf") | Out-Null
-}
+$whatIfMode = [bool]$WhatIf
 
 $targetRoot = Find-GameRoot -Explicit $GameRoot
 if (-not $targetRoot) {

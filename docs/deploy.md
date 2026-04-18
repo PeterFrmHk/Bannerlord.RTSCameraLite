@@ -61,7 +61,7 @@ powershell -ExecutionPolicy Bypass -File scripts/deploy-to-steam.ps1 -GameRoot "
 | --- | --- |
 | `-UnblockDlls` | `Unblock-File` on all `*.dll` under the deployed module (helps with browser-blocked downloads) |
 | `-SkipPackage` | Do not run `package-module.ps1` first (expects `artifacts/...` already) |
-| `-WhatIf` / `-DryRun` | Show intent only; no copy |
+| `-WhatIf` | Show intent only; no copy |
 
 **Example (WhatIf):**
 
