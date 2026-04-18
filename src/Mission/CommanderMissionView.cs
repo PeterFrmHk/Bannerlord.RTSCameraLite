@@ -9,7 +9,7 @@ using TaleWorlds.MountAndBlade.View.MissionViews;
 namespace Bannerlord.RTSCameraLite.Mission
 {
     /// <summary>
-    /// Mission shell: commander mode, camera bridge probe, file-backed config (Slice 6).
+    /// Mission shell: commander mode, internal RTS camera pose movement, <see cref="CameraBridge"/> hand-off (Slice 4).
     /// </summary>
     public sealed class CommanderMissionView : MissionView
     {
@@ -23,7 +23,8 @@ namespace Bannerlord.RTSCameraLite.Mission
         private bool _lastLoggedEnabled;
         private bool _hasLoggedEnabledState;
         private bool _lifecycleCleanupDone;
-        private bool _cameraBridgeProbeCompleted;
+        private bool _loggedFirstInternalPose;
+        private bool _loggedCameraBridgeNotAppliedWarning;
 
         public CommanderModeState CommanderModeState => _commanderModeState;
 
@@ -92,10 +93,14 @@ namespace Bannerlord.RTSCameraLite.Mission
                     _cameraController.ApplyMovementSettings(CommanderCameraMovementSettings.FromConfig(_commanderConfig));
                     _cameraController.InitializeFromMission(Mission);
                 }
+                else
+                {
+                    _loggedFirstInternalPose = false;
+                }
             }
 
             _backspaceConflictGuard.Tick();
-            MaybeProbeCameraBridgeOnce();
+            TickCommanderCameraAndBridge(dt);
         }
 
         public override void OnRemoveBehavior()
@@ -116,20 +121,47 @@ namespace Bannerlord.RTSCameraLite.Mission
             }
         }
 
-        private void MaybeProbeCameraBridgeOnce()
+        private void TickCommanderCameraAndBridge(float dt)
         {
-            if (!_commanderModeState.IsEnabled || _cameraBridgeProbeCompleted)
+            if (!_commanderModeState.IsEnabled || Mission == null)
             {
                 return;
             }
 
-            _cameraBridgeProbeCompleted = true;
-            CameraBridgeResult result = _cameraBridge.TryApply(Mission, _cameraController.GetPose());
-            if (!result.Applied)
+            if (!_cameraController.HasPose)
             {
-                ModLogger.LogDebug(
-                    $"{ModConstants.ModuleId}: CameraBridge probe — Applied={result.Applied}, Restored={result.Restored}: {result.Message}");
+                _cameraController.InitializeFromMission(Mission);
             }
+
+            if (!_cameraController.HasPose)
+            {
+                return;
+            }
+
+            MaybeLogFirstInternalPose();
+            CommanderInputSnapshot snapshot = _commanderInput.ReadCameraSnapshot(Input);
+            _cameraController.Tick(snapshot, dt);
+
+            CameraBridgeResult apply = _cameraBridge.TryApply(Mission, _cameraController.GetPose());
+            if (!apply.Applied && !_loggedCameraBridgeNotAppliedWarning)
+            {
+                _loggedCameraBridgeNotAppliedWarning = true;
+                ModLogger.Warn(
+                    $"{ModConstants.ModuleId}: CameraBridge did not apply (engine path not wired this slice). Applied={apply.Applied}, Restored={apply.Restored}: {apply.Message}");
+            }
+        }
+
+        private void MaybeLogFirstInternalPose()
+        {
+            if (_loggedFirstInternalPose)
+            {
+                return;
+            }
+
+            _loggedFirstInternalPose = true;
+            CommanderCameraPose pose = _cameraController.GetPose();
+            ModLogger.LogDebug(
+                $"{ModConstants.ModuleId}: internal commander camera pose initialized — pos=({pose.Position.x:F1},{pose.Position.y:F1},{pose.Position.z:F1}), yaw={pose.Yaw:F3} rad, pitch={pose.Pitch:F1}°, h={pose.Height:F1}");
         }
 
         private void EnsureLifecycleCleanup(string reason)
@@ -155,7 +187,8 @@ namespace Bannerlord.RTSCameraLite.Mission
             ModLogger.LogDebug($"{ModConstants.ModuleId}: RTS Commander Mode cleanup ({reason}).");
             _loggedShellActive = false;
             _hasLoggedEnabledState = false;
-            _cameraBridgeProbeCompleted = false;
+            _loggedFirstInternalPose = false;
+            _loggedCameraBridgeNotAppliedWarning = false;
             _cameraController.Reset();
         }
 

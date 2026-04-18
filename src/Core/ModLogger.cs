@@ -34,6 +34,22 @@ namespace Bannerlord.RTSCameraLite.Core
         }
 
         /// <summary>
+        /// One-shot diagnostics (debug sink only; never uses InformationManager).
+        /// </summary>
+        public static void Warn(string message)
+        {
+            try
+            {
+                string formatted = $"[{ModConstants.ModuleId}] WARN: {message}";
+                System.Diagnostics.Debug.WriteLine(formatted);
+            }
+            catch
+            {
+                // Logging must never crash the game.
+            }
+        }
+
+        /// <summary>
         /// Emits a single diagnostic line per <paramref name="key"/> for the process (config fallback, path errors, etc.).
         /// </summary>
         public static void LogWarningOnce(string key, string message)

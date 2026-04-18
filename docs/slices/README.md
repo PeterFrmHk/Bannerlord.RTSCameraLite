@@ -25,6 +25,7 @@ Some slices touch fragile engine surfaces. See **`docs/slice-hard-gates.md`** be
 | 1 | [`slice-1-foundation.md`](slice-1-foundation.md) — loadable module only |
 | 2 | [`slice-2-mission-runtime-shell.md`](slice-2-mission-runtime-shell.md) — battle-only `MissionView` shell, commander mode state, Backspace toggle |
 | 3 | [`slice-3-adapter-boundaries.md`](slice-3-adapter-boundaries.md) — adapter skeletons (`CameraBridge`, orders, formation reads, Backspace guard) |
+| 4 | [`slice-4-internal-camera-pose-movement.md`](slice-4-internal-camera-pose-movement.md) — internal pose + input snapshot; manual checklist [`manual-test-checklist-slice-4.md`](../tests/manual-test-checklist-slice-4.md) |
 | 5 | [`slice-5-real-camera-bridge.md`](slice-5-real-camera-bridge.md) — typed `CameraBridge` + restore; manual checklist [`manual-test-checklist-slice-5.md`](../tests/manual-test-checklist-slice-5.md) |
 
 ## Slice audit index (repository root)
@@ -36,6 +37,7 @@ Audit files live under `docs/` (historical layout):
 | 1 | `docs/slice-1-audit.md` |
 | 2 | `docs/slice-2-audit.md` |
 | 3 | `docs/slice-3-audit.md` |
+| 4 | § Audit in `docs/slices/slice-4-internal-camera-pose-movement.md` |
 | 5 | `docs/slice-5-audit.md` |
 | 6 | `docs/slice-6-audit.md` |
 | 7 | `docs/slice-7-audit.md` |

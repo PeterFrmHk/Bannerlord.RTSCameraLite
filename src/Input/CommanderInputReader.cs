@@ -118,5 +118,62 @@ namespace Bannerlord.RTSCameraLite.Input
                 return false;
             }
         }
+
+        /// <summary>
+        /// Reads held-state camera movement keys for the current tick. All <see cref="IInputContext"/> polling for
+        /// these bindings stays in this class (Slice 4).
+        /// </summary>
+        public CommanderInputSnapshot ReadCameraSnapshot(IInputContext input)
+        {
+            if (input == null)
+            {
+                return default;
+            }
+
+            try
+            {
+                bool fast =
+                    IsKeyDown(input, InputKey.LeftShift)
+                    || IsKeyDown(input, InputKey.RightShift)
+                    || IsKeyDown(input, _fastMoveKey);
+
+                float zoom = 0f;
+                if (IsKeyDown(input, _zoomInKey))
+                {
+                    zoom -= 1f;
+                }
+
+                if (IsKeyDown(input, _zoomOutKey))
+                {
+                    zoom += 1f;
+                }
+
+                return new CommanderInputSnapshot(
+                    IsKeyDown(input, _moveForwardKey),
+                    IsKeyDown(input, _moveBackKey),
+                    IsKeyDown(input, _moveLeftKey),
+                    IsKeyDown(input, _moveRightKey),
+                    IsKeyDown(input, _rotateLeftKey),
+                    IsKeyDown(input, _rotateRightKey),
+                    fast,
+                    zoom);
+            }
+            catch
+            {
+                return default;
+            }
+        }
+
+        private static bool IsKeyDown(IInputContext input, InputKey key)
+        {
+            try
+            {
+                return input.IsKeyDown(key);
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }
