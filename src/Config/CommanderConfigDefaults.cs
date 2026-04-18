@@ -102,6 +102,11 @@ namespace Bannerlord.RTSCameraLite.Config
                 AllowNoCommanderBasicFollow = true,
                 BlockAdvancedCommandsWithoutCommander = true,
                 EnableNativePrimitiveOrderExecution = false,
+                EnableNativeCavalryChargeSequence = false,
+                CavalryUseNativeForwardBeforeCharge = true,
+                CavalryUseNativeChargeCommand = true,
+                CavalryForwardToChargeDistance = 25.0f,
+                EnableCavalrySequenceDebug = true,
                 CommandValidationDebugLogIntervalSeconds = 0.4f
             };
         }

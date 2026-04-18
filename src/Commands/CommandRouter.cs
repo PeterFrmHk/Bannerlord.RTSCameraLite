@@ -20,7 +20,7 @@ namespace Bannerlord.RTSCameraLite.Commands
         {
             _config = config ?? CommanderConfigDefaults.CreateDefault();
             _restrictions = new FormationRestrictionService(_config);
-            _nativePrimitives = nativePrimitives ?? new NativeOrderPrimitiveExecutor();
+            _nativePrimitives = nativePrimitives ?? new NativeOrderPrimitiveExecutor(_config);
         }
 
         public CommandValidationResult Validate(CommandIntent intent, CommandContext context)
@@ -120,13 +120,27 @@ namespace Bannerlord.RTSCameraLite.Commands
                     validation.Message);
             }
 
+            if (intent != null && intent.Type == CommandType.NativeCavalryChargeSequence)
+            {
+                return new CommandExecutionDecision(
+                    false,
+                    requiresNativeOrder: false,
+                    requiresCavalrySequence: true,
+                    NativeOrderPrimitive.None,
+                    "native cavalry charge sequence is handled by CavalryNativeChargeOrchestrator (not direct primitives)");
+            }
+
             bool canRunNative = _config.EnableNativePrimitiveOrderExecution;
             MapPrimitives(intent, out NativeOrderPrimitive primitive, out bool requiresCavalrySequence, out bool requiresNative);
 
             bool shouldExecute = canRunNative && requiresNative && primitive != NativeOrderPrimitive.None;
             string reason = shouldExecute
                 ? "native primitive execution enabled"
-                : (canRunNative ? "no mapped primitive for this command" : "native primitive execution disabled in config");
+                : (!canRunNative
+                    ? (!_config.EnableNativeOrderExecution
+                        ? "EnableNativeOrderExecution is false"
+                        : "EnableNativePrimitiveOrderExecution is false")
+                    : "no mapped primitive for this command");
 
             if (shouldExecute)
             {
@@ -141,35 +155,35 @@ namespace Bannerlord.RTSCameraLite.Commands
                 reason);
         }
 
-        private void TryInvokePrimitive(CommandIntent intent, NativeOrderPrimitive primitive)
+        private void TryInvokePrimitive(CommandIntent intent, CommandContext context, NativeOrderPrimitive primitive)
         {
-            Formation formation = intent.SourceFormation;
-            if (formation == null)
+            if (intent?.SourceFormation == null || context == null)
             {
                 return;
             }
 
             try
             {
+                NativeOrderExecutionContext ctx = NativeOrderExecutionContext.FromRouter(context, intent, primitive);
                 switch (primitive)
                 {
                     case NativeOrderPrimitive.AdvanceOrMove:
-                        if (intent.TargetPosition.HasValue)
-                        {
-                            _nativePrimitives.ExecuteAdvanceOrMove(formation, intent.TargetPosition.Value);
-                        }
-
+                        _nativePrimitives.ExecuteAdvanceOrMove(ctx);
                         break;
                     case NativeOrderPrimitive.Charge:
-                        _nativePrimitives.ExecuteCharge(formation);
+                        _nativePrimitives.ExecuteCharge(ctx);
                         break;
-                    case NativeOrderPrimitive.HoldOrReform:
-                        if (!intent.TargetPosition.HasValue)
-                        {
-                            break;
-                        }
-
-                        _nativePrimitives.ExecuteHoldOrReform(formation, intent.TargetPosition.Value);
+                    case NativeOrderPrimitive.Hold:
+                        _nativePrimitives.ExecuteHold(ctx);
+                        break;
+                    case NativeOrderPrimitive.Reform:
+                        _nativePrimitives.ExecuteReform(ctx);
+                        break;
+                    case NativeOrderPrimitive.FollowCommander:
+                        _nativePrimitives.ExecuteFollowCommander(ctx);
+                        break;
+                    case NativeOrderPrimitive.Stop:
+                        _nativePrimitives.ExecuteStop(ctx);
                         break;
                 }
             }
@@ -206,8 +220,8 @@ namespace Bannerlord.RTSCameraLite.Commands
                     break;
                 case CommandType.NativeCavalryChargeSequence:
                     requiresCavalrySequence = true;
-                    primitive = NativeOrderPrimitive.Charge;
-                    requiresNative = true;
+                    primitive = NativeOrderPrimitive.None;
+                    requiresNative = false;
                     break;
                 default:
                     primitive = NativeOrderPrimitive.None;
@@ -221,6 +235,56 @@ namespace Bannerlord.RTSCameraLite.Commands
             return !(float.IsNaN(v.x) || float.IsInfinity(v.x)
                 || float.IsNaN(v.y) || float.IsInfinity(v.y)
                 || float.IsNaN(v.z) || float.IsInfinity(v.z));
+        }
+
+        /// <summary>Validates and starts the Slice 16 orchestrator (does not invoke charge primitive directly).</summary>
+        public bool TryStartNativeCavalryChargeSequence(
+            CommandIntent intent,
+            CommandContext context,
+            CavalryNativeChargeOrchestrator orchestrator,
+            out string message)
+        {
+            message = string.Empty;
+            try
+            {
+                if (orchestrator == null)
+                {
+                    message = "orchestrator is null";
+                    return false;
+                }
+
+                if (!_config.EnableNativeCavalryChargeSequence)
+                {
+                    message = "EnableNativeCavalryChargeSequence is false";
+                    return false;
+                }
+
+                if (!_config.EnableNativePrimitiveOrderExecution)
+                {
+                    message = "EnableNativePrimitiveOrderExecution is false";
+                    return false;
+                }
+
+                CommandValidationResult validation = Validate(intent, context);
+                if (!validation.IsValid || validation.IsBlocked)
+                {
+                    message = validation.Message;
+                    return false;
+                }
+
+                if (intent == null || intent.Type != CommandType.NativeCavalryChargeSequence)
+                {
+                    message = "intent is not NativeCavalryChargeSequence";
+                    return false;
+                }
+
+                return orchestrator.StartSequence(intent, context, out message);
+            }
+            catch (Exception ex)
+            {
+                message = "TryStartNativeCavalryChargeSequence: " + ex.Message;
+                return false;
+            }
         }
     }
 }

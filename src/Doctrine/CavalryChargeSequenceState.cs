@@ -91,6 +91,9 @@ namespace Bannerlord.RTSCameraLite.Doctrine
 
         public bool ReformNativeIssued { get; set; }
 
+        /// <summary>Seconds since sequence start when advance/move was last issued (native sequence).</summary>
+        public float LastNativeAdvanceIssueTime { get; set; } = -1f;
+
         public static CavalryChargeSequenceState NotMounted(Formation formation, string reason)
         {
             return new CavalryChargeSequenceState(

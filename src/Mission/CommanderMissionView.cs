@@ -57,7 +57,27 @@ namespace Bannerlord.RTSCameraLite.Mission
         private readonly Dictionary<Formation, float> _cavalryWideLayoutLogTime = new Dictionary<Formation, float>();
         private float _cavalryDoctrineAccum;
         private CommandRouter _commandRouter;
+        private NativeOrderPrimitiveExecutor _nativeOrderPrimitives;
+        private readonly CavalrySequenceRegistry _cavalrySequenceRegistry = new CavalrySequenceRegistry();
+        private CavalryNativeChargeOrchestrator _cavalryNativeChargeOrchestrator;
+        private float _cavalryNativeSequenceAccum;
+        private const float CavalryNativeSequenceTickIntervalSeconds = 0.5f;
+        private readonly Dictionary<Formation, NativeCavalrySequenceLogState> _cavalryNativeSeqTransitionLog =
+            new Dictionary<Formation, NativeCavalrySequenceLogState>();
         private float _secondsSinceCommandValidationLog;
+
+        private sealed class NativeCavalrySequenceLogState
+        {
+            public bool LoggedAdvance;
+
+            public bool LoggedCharge;
+
+            public bool LoggedLockReleased;
+
+            public bool LoggedReformReady;
+
+            public bool LoggedReassembled;
+        }
 
         public CommanderModeState CommanderModeState => _commanderModeState;
 
@@ -107,7 +127,15 @@ namespace Bannerlord.RTSCameraLite.Mission
             _commanderRallySettings = CommanderRallySettings.FromConfig(_commanderConfig);
             _rallyScanAccum = System.Math.Max(0.1f, _commanderRallySettings.RallyScanIntervalSeconds);
             _commanderPresenceScanTimer = CommanderPresenceScanIntervalSeconds;
-            _commandRouter = new CommandRouter(_commanderConfig, new NativeOrderPrimitiveExecutor());
+            _nativeOrderPrimitives = new NativeOrderPrimitiveExecutor();
+            _commandRouter = new CommandRouter(_commanderConfig, _nativeOrderPrimitives);
+            _cavalryNativeChargeOrchestrator = new CavalryNativeChargeOrchestrator(
+                _commanderConfig,
+                _formationDataAdapter,
+                _nativeOrderPrimitives,
+                _commanderAssignmentService,
+                _cavalrySequenceRegistry);
+            _cavalryNativeSequenceAccum = CavalryNativeSequenceTickIntervalSeconds;
             _secondsSinceCommandValidationLog = 0f;
             LogShellActiveOnce();
             LogEnabledTransition();
@@ -133,6 +161,7 @@ namespace Bannerlord.RTSCameraLite.Mission
             MaybeScanDoctrineProfiles(dt);
             MaybeScanRallyAbsorption(dt);
             MaybeEvaluateCavalryDoctrine(dt);
+            MaybeTickNativeCavalryChargeSequences(dt);
 
             bool toggle = _commanderInput.TryConsumeCommanderModeToggle(Input);
             if (!toggle)
@@ -386,6 +415,15 @@ namespace Bannerlord.RTSCameraLite.Mission
                         continue;
                     }
 
+                    if (_commanderConfig.EnableNativeCavalryChargeSequence
+                        && _cavalrySequenceRegistry.TryGetSequence(formation, out CavalryChargeSequenceState nativeSeq)
+                        && nativeSeq != null
+                        && !nativeSeq.Aborted
+                        && nativeSeq.CurrentState != CavalryChargeState.Reassembled)
+                    {
+                        continue;
+                    }
+
                     CommanderPresenceResult presence = _commanderAssignmentService.DetectCommander(Mission, formation);
                     CommanderAnchorState anchor = _anchorResolver.ResolveAnchor(Mission, formation, presence, _anchorSettings);
                     DoctrineScoreResult doctrineRes = _doctrineScoreCalculator.Compute(
@@ -472,6 +510,108 @@ namespace Bannerlord.RTSCameraLite.Mission
             catch (Exception ex)
             {
                 ModLogger.LogDebug($"{ModConstants.ModuleId}: Cavalry doctrine scan skipped ({ex.Message})");
+            }
+        }
+
+        /// <summary>
+        /// Slice 16 — throttled tick for native cavalry charge orchestration (no per-frame heavy scans).
+        /// </summary>
+        private void MaybeTickNativeCavalryChargeSequences(float dt)
+        {
+            if (!_commanderConfig.EnableNativeCavalryChargeSequence
+                || _cavalryNativeChargeOrchestrator == null
+                || Mission?.PlayerTeam == null)
+            {
+                return;
+            }
+
+            _cavalryNativeSequenceAccum += dt;
+            if (_cavalryNativeSequenceAccum < CavalryNativeSequenceTickIntervalSeconds)
+            {
+                return;
+            }
+
+            _cavalryNativeSequenceAccum = 0f;
+
+            try
+            {
+                _cavalrySequenceRegistry.CleanupInvalidSequences(Mission);
+                var finished = new List<Formation>();
+                _cavalrySequenceRegistry.ForEachActive(
+                    (formation, state) =>
+                    {
+                        if (formation == null || state == null)
+                        {
+                            return;
+                        }
+
+                        bool prevForward = state.NativeForwardIssued;
+                        bool prevCharge = state.NativeChargeIssued;
+                        bool prevLock = state.PositionLockReleased;
+                        bool prevReformAllowed = state.ReformAllowed;
+                        CavalryChargeState prevState = state.CurrentState;
+
+                        CavalrySequenceTickResult tick = _cavalryNativeChargeOrchestrator.TickSequence(
+                            state,
+                            CavalryNativeSequenceTickIntervalSeconds);
+
+                        if (_commanderConfig.EnableCavalrySequenceDebug)
+                        {
+                            if (!_cavalryNativeSeqTransitionLog.TryGetValue(formation, out NativeCavalrySequenceLogState logState))
+                            {
+                                logState = new NativeCavalrySequenceLogState();
+                                _cavalryNativeSeqTransitionLog[formation] = logState;
+                            }
+
+                            if (state.NativeForwardIssued && !prevForward && !logState.LoggedAdvance)
+                            {
+                                logState.LoggedAdvance = true;
+                                ModLogger.LogDebug($"{ModConstants.ModuleId}: Cavalry advancing.");
+                            }
+
+                            if (state.NativeChargeIssued && !prevCharge && !logState.LoggedCharge)
+                            {
+                                logState.LoggedCharge = true;
+                                ModLogger.LogDebug($"{ModConstants.ModuleId}: Cavalry charge issued.");
+                            }
+
+                            if (state.PositionLockReleased && !prevLock && !logState.LoggedLockReleased)
+                            {
+                                logState.LoggedLockReleased = true;
+                                ModLogger.LogDebug($"{ModConstants.ModuleId}: Cavalry lock released.");
+                            }
+
+                            if (state.ReformAllowed && !prevReformAllowed && !logState.LoggedReformReady)
+                            {
+                                logState.LoggedReformReady = true;
+                                ModLogger.LogDebug($"{ModConstants.ModuleId}: Cavalry reform ready.");
+                            }
+
+                            if (state.CurrentState == CavalryChargeState.Reassembled
+                                && prevState != CavalryChargeState.Reassembled
+                                && !logState.LoggedReassembled)
+                            {
+                                logState.LoggedReassembled = true;
+                                ModLogger.LogDebug($"{ModConstants.ModuleId}: Cavalry reassembled.");
+                            }
+                        }
+
+                        if (tick.Completed || tick.Aborted)
+                        {
+                            finished.Add(formation);
+                        }
+                    });
+
+                for (int i = 0; i < finished.Count; i++)
+                {
+                    Formation f = finished[i];
+                    _cavalrySequenceRegistry.StopSequence(f);
+                    _cavalryNativeSeqTransitionLog.Remove(f);
+                }
+            }
+            catch (Exception ex)
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: Native cavalry sequence tick skipped ({ex.Message})");
             }
         }
 
@@ -733,6 +873,36 @@ namespace Bannerlord.RTSCameraLite.Mission
                     return;
                 }
 
+                if (input.IsKeyReleased(InputKey.N))
+                {
+                    CommandIntent cavSeq = BuildNativeCavalryChargeSequenceIntent(formation);
+                    if (cavSeq == null)
+                    {
+                        if (_commanderConfig.EnableCavalrySequenceDebug && _secondsSinceCommandValidationLog >= logInterval)
+                        {
+                            ModLogger.LogDebug(
+                                $"{ModConstants.ModuleId}: Cmd validate NativeCavalryChargeSequence: skipped (no enemy target).");
+                            _secondsSinceCommandValidationLog = 0f;
+                        }
+
+                        return;
+                    }
+
+                    CommandContext ctxN = BuildCommandContext(formation, "debug-key-N");
+                    if (_commandRouter.TryStartNativeCavalryChargeSequence(cavSeq, ctxN, _cavalryNativeChargeOrchestrator, out string startMsg))
+                    {
+                        _cavalryNativeSeqTransitionLog[formation] = new NativeCavalrySequenceLogState();
+                    }
+                    else if (_commanderConfig.EnableCavalrySequenceDebug && _secondsSinceCommandValidationLog >= logInterval)
+                    {
+                        ModLogger.LogDebug(
+                            $"{ModConstants.ModuleId}: Cmd NativeCavalryChargeSequence not started: {startMsg}");
+                        _secondsSinceCommandValidationLog = 0f;
+                    }
+
+                    return;
+                }
+
                 if (input.IsKeyReleased(InputKey.M))
                 {
                     CommandIntent advance = BuildAdvanceOrMoveIntent(formation);
@@ -856,6 +1026,30 @@ namespace Bannerlord.RTSCameraLite.Mission
             };
         }
 
+        private CommandIntent BuildNativeCavalryChargeSequenceIntent(Formation formation)
+        {
+            if (Mission == null || formation == null || _formationDataAdapter == null)
+            {
+                return null;
+            }
+
+            if (!CavalryTargetTracker.TryGetNearestEnemyFormation(Mission, formation, _formationDataAdapter, out Formation enemy))
+            {
+                return null;
+            }
+
+            return new CommandIntent
+            {
+                Type = CommandType.NativeCavalryChargeSequence,
+                SourceFormation = formation,
+                TargetFormation = enemy,
+                RequiresPosition = false,
+                RequiresTargetFormation = false,
+                RequiresCommander = true,
+                Source = "debug-key-N"
+            };
+        }
+
         private CommandIntent BuildAdvanceOrMoveIntent(Formation formation)
         {
             FormationDataResult center = _formationDataAdapter.TryGetFormationCenter(formation);
@@ -918,6 +1112,8 @@ namespace Bannerlord.RTSCameraLite.Mission
             _cavalryDoctrineAccum = 0f;
             _cavalryDoctrineByFormation.Clear();
             _cavalryWideLayoutLogTime.Clear();
+            _cavalrySequenceRegistry.Clear();
+            _cavalryNativeSeqTransitionLog.Clear();
             _secondsSinceCommandValidationLog = 0f;
             _troopAbsorptionController?.Clear();
             _cameraController.Reset();

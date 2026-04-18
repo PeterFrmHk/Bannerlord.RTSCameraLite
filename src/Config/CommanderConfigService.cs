@@ -109,6 +109,7 @@ namespace Bannerlord.RTSCameraLite.Config
                 CommanderConfigDefaults.HarmonizeLegacyCavalryDoctrineFields(parsed);
                 ApplyOmittedSlice15CommandRouterDefaults(json, parsed);
                 CommanderConfigDefaults.HarmonizeLegacyCommandRouterFields(parsed);
+                ApplyOmittedSlice16NativeCavalrySequenceDefaults(json, parsed);
 
                 return new ConfigLoadResult(
                     loaded: true,
@@ -558,6 +559,54 @@ namespace Bannerlord.RTSCameraLite.Config
         /// <summary>
         /// Omitted Slice 15 keys deserialize to false / 0 — restore command router defaults when absent from JSON.
         /// </summary>
+        private static void ApplyOmittedSlice16NativeCavalrySequenceDefaults(string json, CommanderConfig parsed)
+        {
+            if (parsed == null || string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            try
+            {
+                using JsonDocument doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                JsonElement root = doc.RootElement;
+                CommanderConfig d = CommanderConfigDefaults.CreateDefault();
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableNativeCavalryChargeSequence)))
+                {
+                    parsed.EnableNativeCavalryChargeSequence = d.EnableNativeCavalryChargeSequence;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CavalryUseNativeForwardBeforeCharge)))
+                {
+                    parsed.CavalryUseNativeForwardBeforeCharge = d.CavalryUseNativeForwardBeforeCharge;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CavalryUseNativeChargeCommand)))
+                {
+                    parsed.CavalryUseNativeChargeCommand = d.CavalryUseNativeChargeCommand;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CavalryForwardToChargeDistance)))
+                {
+                    parsed.CavalryForwardToChargeDistance = d.CavalryForwardToChargeDistance;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableCavalrySequenceDebug)))
+                {
+                    parsed.EnableCavalrySequenceDebug = d.EnableCavalrySequenceDebug;
+                }
+            }
+            catch
+            {
+                // Ignore merge failures.
+            }
+        }
+
         private static void ApplyOmittedSlice15CommandRouterDefaults(string json, CommanderConfig parsed)
         {
             if (parsed == null || string.IsNullOrWhiteSpace(json))

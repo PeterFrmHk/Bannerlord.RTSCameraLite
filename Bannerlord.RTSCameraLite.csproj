@@ -11,7 +11,7 @@
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
     <FileVersion>0.1.0.0</FileVersion>
-    <InformationalVersion>0.1.0-slice15</InformationalVersion>
+    <InformationalVersion>0.1.0-slice16</InformationalVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -19,7 +19,7 @@
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
   </PropertyGroup>
 
-  <!-- Slice 10 doctrine; Slice 11 eligibility; Slice 12 rally/layout; Slice 13 cavalry doctrine; Slice 15 command router. -->
+  <!-- Slice 10 doctrine; Slice 11 eligibility; Slice 12 rally/layout; Slice 13 cavalry doctrine; Slice 15 command router; Slice 16 native cavalry orchestrator. -->
   <ItemGroup>
     <Compile Remove="src\**\*.cs" />
     <Compile Include="src\SubModule.cs" />
@@ -88,6 +88,10 @@
     <Compile Include="src\Doctrine\CavalryImpactDetector.cs" />
     <Compile Include="src\Doctrine\CavalryReformPolicy.cs" />
     <Compile Include="src\Doctrine\CavalryDoctrineRules.cs" />
+    <Compile Include="src\Doctrine\CavalryNativeChargeOrchestrator.cs" />
+    <Compile Include="src\Doctrine\CavalryTargetTracker.cs" />
+    <Compile Include="src\Doctrine\CavalrySequenceTickResult.cs" />
+    <Compile Include="src\Doctrine\CavalrySequenceRegistry.cs" />
     <Compile Include="src\Doctrine\RestrictionDecision.cs" />
     <Compile Include="src\Doctrine\FormationRestrictionService.cs" />
     <Compile Include="src\Commands\CommandType.cs" />

@@ -94,5 +94,10 @@
   "AllowNoCommanderBasicFollow": true,
   "BlockAdvancedCommandsWithoutCommander": true,
   "EnableNativePrimitiveOrderExecution": false,
+  "EnableNativeCavalryChargeSequence": false,
+  "CavalryUseNativeForwardBeforeCharge": true,
+  "CavalryUseNativeChargeCommand": true,
+  "CavalryForwardToChargeDistance": 25.0,
+  "EnableCavalrySequenceDebug": true,
   "CommandValidationDebugLogIntervalSeconds": 0.4
 }

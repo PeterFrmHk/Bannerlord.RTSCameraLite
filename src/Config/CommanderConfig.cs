@@ -205,6 +205,19 @@ namespace Bannerlord.RTSCameraLite.Config
         /// </summary>
         public bool EnableNativePrimitiveOrderExecution { get; set; }
 
+        // Slice 16 — native cavalry charge sequence orchestrator (opt-in; requires wired executor).
+
+        /// <summary>When true, <see cref="Commands.CommandType.NativeCavalryChargeSequence"/> may start the orchestrator (still requires native primitives enabled and wired).</summary>
+        public bool EnableNativeCavalryChargeSequence { get; set; }
+
+        public bool CavalryUseNativeForwardBeforeCharge { get; set; }
+
+        public bool CavalryUseNativeChargeCommand { get; set; }
+
+        public float CavalryForwardToChargeDistance { get; set; }
+
+        public bool EnableCavalrySequenceDebug { get; set; }
+
         /// <summary>Minimum seconds between debug validation log lines (Slice 15).</summary>
         public float CommandValidationDebugLogIntervalSeconds { get; set; }
     }
