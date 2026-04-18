@@ -31,7 +31,7 @@ namespace Bannerlord.RTSCameraLite.Doctrine
         {
             _config = config ?? CommanderConfigDefaults.CreateDefault();
             _adapter = adapter ?? new FormationDataAdapter();
-            _executor = executor ?? new NativeOrderPrimitiveExecutor();
+            _executor = executor ?? new NativeOrderPrimitiveExecutor(_config);
             _commanderAssignment = commanderAssignment ?? new CommanderAssignmentService(_adapter);
             _registry = registry ?? new CavalrySequenceRegistry();
         }
@@ -50,6 +50,12 @@ namespace Bannerlord.RTSCameraLite.Doctrine
                 if (!_config.EnableNativePrimitiveOrderExecution)
                 {
                     message = "native primitive order execution disabled in config";
+                    return false;
+                }
+
+                if (!_config.EnableNativeOrderExecution)
+                {
+                    message = "EnableNativeOrderExecution is false";
                     return false;
                 }
 
@@ -120,13 +126,16 @@ namespace Bannerlord.RTSCameraLite.Doctrine
                     return false;
                 }
 
-                NativeOrderResult probe = _executor.ExecuteAdvanceOrMove(
+                NativeOrderExecutionContext probeCtx = NativeOrderExecutionContext.ForCavalryDoctrine(
+                    mission,
                     source,
+                    targetFormation,
                     targetWorld,
-                    NativeOrderExecutionContext.CavalrySequenceProbe);
-                if (probe.NotWired)
+                    NativeOrderExecutionContext.ReasonCavalrySequenceProbe);
+                NativeOrderResult probe = _executor.ExecuteAdvanceOrMove(probeCtx);
+                if (!probe.Executed)
                 {
-                    message = "native executor not wired: " + probe.Message;
+                    message = "native advance/move probe failed: " + probe.Message;
                     return false;
                 }
 
@@ -169,7 +178,7 @@ namespace Bannerlord.RTSCameraLite.Doctrine
 
         public CavalrySequenceTickResult TickSequence(CavalryChargeSequenceState state, float dt)
         {
-            NativeOrderResult lastNative = NativeOrderResult.Success("tick", string.Empty);
+            NativeOrderResult lastNative = NativeOrderResult.Success(NativeOrderPrimitive.None, "tick");
             if (state == null || dt < 0f)
             {
                 return new CavalrySequenceTickResult(false, false, true, CavalryChargeState.ChargeBroken, "null state", lastNative);
@@ -289,14 +298,17 @@ namespace Bannerlord.RTSCameraLite.Doctrine
                         && (state.SequenceTimeSeconds - state.LastNativeAdvanceIssueTime >= NativeAdvanceReissueSeconds);
                     if (firstAdvance || reissueAdvance)
                     {
-                        NativeOrderResult adv = _executor.ExecuteAdvanceOrMove(
+                        NativeOrderExecutionContext advCtx = NativeOrderExecutionContext.ForCavalryDoctrine(
+                            mission,
                             source,
+                            targetFormation,
                             targetWorld,
-                            NativeOrderExecutionContext.CavalrySequenceTick);
+                            NativeOrderExecutionContext.ReasonCavalrySequenceTick);
+                        NativeOrderResult adv = _executor.ExecuteAdvanceOrMove(advCtx);
                         lastNative = adv;
-                        if (adv.NotWired)
+                        if (!adv.Executed)
                         {
-                            AbortSequence(state, "native advance/move not wired during sequence");
+                            AbortSequence(state, "native advance/move failed during sequence: " + adv.Message);
                             return new CavalrySequenceTickResult(false, false, true, state.CurrentState, state.AbortReason, lastNative);
                         }
 
@@ -314,11 +326,17 @@ namespace Bannerlord.RTSCameraLite.Doctrine
                     && distToTarget <= forwardDist
                     && _config.CavalryUseNativeChargeCommand)
                 {
-                    NativeOrderResult chg = _executor.ExecuteCharge(source, NativeOrderExecutionContext.CavalrySequenceTick);
+                    NativeOrderExecutionContext chgCtx = NativeOrderExecutionContext.ForCavalryDoctrine(
+                        mission,
+                        source,
+                        targetFormation,
+                        null,
+                        NativeOrderExecutionContext.ReasonCavalrySequenceTick);
+                    NativeOrderResult chg = _executor.ExecuteCharge(chgCtx);
                     lastNative = chg;
-                    if (chg.NotWired)
+                    if (!chg.Executed)
                     {
-                        AbortSequence(state, "native charge not wired during sequence");
+                        AbortSequence(state, "native charge failed during sequence: " + chg.Message);
                         return new CavalrySequenceTickResult(false, false, true, state.CurrentState, state.AbortReason, lastNative);
                     }
 
@@ -410,14 +428,17 @@ namespace Bannerlord.RTSCameraLite.Doctrine
                 {
                     FormationDataResult selfCenter = _adapter.TryGetFormationCenter(source);
                     Vec3 reformPos = selfCenter.Success ? selfCenter.Vec3 : targetWorld;
-                    NativeOrderResult hold = _executor.ExecuteHoldOrReform(
+                    NativeOrderExecutionContext reformCtx = NativeOrderExecutionContext.ForCavalryDoctrine(
+                        mission,
                         source,
+                        targetFormation,
                         reformPos,
-                        NativeOrderExecutionContext.CavalrySequenceTick);
-                    lastNative = hold;
-                    if (hold.NotWired)
+                        NativeOrderExecutionContext.ReasonCavalrySequenceTick);
+                    NativeOrderResult reformResult = _executor.ExecuteReform(reformCtx);
+                    lastNative = reformResult;
+                    if (!reformResult.Executed)
                     {
-                        AbortSequence(state, "native hold/reform not wired during sequence");
+                        AbortSequence(state, "native reform failed during sequence: " + reformResult.Message);
                         return new CavalrySequenceTickResult(false, false, true, state.CurrentState, state.AbortReason, lastNative);
                     }
 

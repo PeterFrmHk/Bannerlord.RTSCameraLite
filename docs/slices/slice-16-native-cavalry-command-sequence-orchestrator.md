@@ -11,7 +11,7 @@ Drive shock cavalry doctrine using **native** order primitives (`NativeOrderPrim
 3. **Charge** — at or inside forward distance, issue `ExecuteCharge` when `CavalryUseNativeChargeCommand` is true.
 4. **Release lock** — at `CavalryReleaseLockDistance` or when `CavalryImpactDetector` reports close/impact contact; do not force slot lock through close combat.
 5. **Disengage** — allow native charge behavior; track distance from target formation or recorded impact point.
-6. **Reform** — only when `CavalryReformPolicy` allows (including ≥ `CavalryReformDistanceFromAttackedFormation` default 30m, cooldown, commander validity, nearest-enemy safety when known); then `ExecuteHoldOrReform` at a reform position and re-enable lock semantics.
+6. **Reform** — only when `CavalryReformPolicy` allows (including ≥ `CavalryReformDistanceFromAttackedFormation` default 30m, cooldown, commander validity, nearest-enemy safety when known); then `NativeOrderPrimitiveExecutor.ExecuteReform` at a reform position and re-enable lock semantics.
 
 ## Types (src/Doctrine)
 

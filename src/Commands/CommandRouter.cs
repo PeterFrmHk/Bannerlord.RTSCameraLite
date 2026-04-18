@@ -1,5 +1,4 @@
 using System;
-using Bannerlord.RTSCameraLite.Adapters;
 using Bannerlord.RTSCameraLite.Config;
 using Bannerlord.RTSCameraLite.Doctrine;
 using TaleWorlds.Library;
@@ -144,7 +143,7 @@ namespace Bannerlord.RTSCameraLite.Commands
 
             if (shouldExecute)
             {
-                TryInvokePrimitive(intent, primitive);
+                TryInvokePrimitive(intent, context, primitive);
             }
 
             return new CommandExecutionDecision(
@@ -214,8 +213,11 @@ namespace Bannerlord.RTSCameraLite.Commands
                     requiresNative = true;
                     break;
                 case CommandType.BasicHold:
+                    primitive = NativeOrderPrimitive.Hold;
+                    requiresNative = true;
+                    break;
                 case CommandType.Reform:
-                    primitive = NativeOrderPrimitive.HoldOrReform;
+                    primitive = NativeOrderPrimitive.Reform;
                     requiresNative = true;
                     break;
                 case CommandType.NativeCavalryChargeSequence:
@@ -262,6 +264,12 @@ namespace Bannerlord.RTSCameraLite.Commands
                 if (!_config.EnableNativePrimitiveOrderExecution)
                 {
                     message = "EnableNativePrimitiveOrderExecution is false";
+                    return false;
+                }
+
+                if (!_config.EnableNativeOrderExecution)
+                {
+                    message = "EnableNativeOrderExecution is false";
                     return false;
                 }
 

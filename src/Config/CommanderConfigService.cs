@@ -107,6 +107,7 @@ namespace Bannerlord.RTSCameraLite.Config
                 CommanderConfigDefaults.HarmonizeLegacyRallyFields(parsed);
                 ApplyOmittedSlice13CavalryDefaults(json, parsed);
                 CommanderConfigDefaults.HarmonizeLegacyCavalryDoctrineFields(parsed);
+                ApplyOmittedSlice14NativeOrderDefaults(json, parsed);
                 ApplyOmittedSlice15CommandRouterDefaults(json, parsed);
                 CommanderConfigDefaults.HarmonizeLegacyCommandRouterFields(parsed);
                 ApplyOmittedSlice16NativeCavalrySequenceDefaults(json, parsed);
@@ -599,6 +600,72 @@ namespace Bannerlord.RTSCameraLite.Config
                 if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableCavalrySequenceDebug)))
                 {
                     parsed.EnableCavalrySequenceDebug = d.EnableCavalrySequenceDebug;
+                }
+            }
+            catch
+            {
+                // Ignore merge failures.
+            }
+        }
+
+        /// <summary>
+        /// Omitted Slice 14 keys deserialize to false — restore per-primitive allow defaults when absent from JSON.
+        /// </summary>
+        private static void ApplyOmittedSlice14NativeOrderDefaults(string json, CommanderConfig parsed)
+        {
+            if (parsed == null || string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            try
+            {
+                using JsonDocument doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                JsonElement root = doc.RootElement;
+                CommanderConfig d = CommanderConfigDefaults.CreateDefault();
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableNativeOrderExecution)))
+                {
+                    parsed.EnableNativeOrderExecution = d.EnableNativeOrderExecution;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.AllowNativeAdvanceOrMove)))
+                {
+                    parsed.AllowNativeAdvanceOrMove = d.AllowNativeAdvanceOrMove;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.AllowNativeCharge)))
+                {
+                    parsed.AllowNativeCharge = d.AllowNativeCharge;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.AllowNativeHold)))
+                {
+                    parsed.AllowNativeHold = d.AllowNativeHold;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.AllowNativeReform)))
+                {
+                    parsed.AllowNativeReform = d.AllowNativeReform;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.AllowNativeFollowCommander)))
+                {
+                    parsed.AllowNativeFollowCommander = d.AllowNativeFollowCommander;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.AllowNativeStop)))
+                {
+                    parsed.AllowNativeStop = d.AllowNativeStop;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableNativeOrderDebug)))
+                {
+                    parsed.EnableNativeOrderDebug = d.EnableNativeOrderDebug;
                 }
             }
             catch

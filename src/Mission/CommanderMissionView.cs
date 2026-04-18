@@ -127,7 +127,7 @@ namespace Bannerlord.RTSCameraLite.Mission
             _commanderRallySettings = CommanderRallySettings.FromConfig(_commanderConfig);
             _rallyScanAccum = System.Math.Max(0.1f, _commanderRallySettings.RallyScanIntervalSeconds);
             _commanderPresenceScanTimer = CommanderPresenceScanIntervalSeconds;
-            _nativeOrderPrimitives = new NativeOrderPrimitiveExecutor();
+            _nativeOrderPrimitives = new NativeOrderPrimitiveExecutor(_commanderConfig);
             _commandRouter = new CommandRouter(_commanderConfig, _nativeOrderPrimitives);
             _cavalryNativeChargeOrchestrator = new CavalryNativeChargeOrchestrator(
                 _commanderConfig,

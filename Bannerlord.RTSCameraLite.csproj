@@ -19,7 +19,7 @@
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
   </PropertyGroup>
 
-  <!-- Slice 10 doctrine; Slice 11 eligibility; Slice 12 rally/layout; Slice 13 cavalry doctrine; Slice 15 command router; Slice 16 native cavalry orchestrator. -->
+  <!-- Slice 10 doctrine; Slice 11 eligibility; Slice 12 rally/layout; Slice 13 cavalry doctrine; Slice 14 native order executor; Slice 15 command router; Slice 16 native cavalry orchestrator. -->
   <ItemGroup>
     <Compile Remove="src\**\*.cs" />
     <Compile Include="src\SubModule.cs" />
@@ -34,10 +34,10 @@
     <Compile Include="src\Input\CommanderInputSnapshot.cs" />
     <Compile Include="src\Adapters\CameraBridge.cs" />
     <Compile Include="src\Adapters\CameraBridgeResult.cs" />
-    <Compile Include="src\Adapters\NativeOrderPrimitive.cs" />
-    <Compile Include="src\Adapters\NativeOrderPrimitiveExecutor.cs" />
-    <Compile Include="src\Adapters\NativeOrderExecutionContext.cs" />
-    <Compile Include="src\Adapters\NativeOrderResult.cs" />
+    <Compile Include="src\Commands\NativeOrderPrimitive.cs" />
+    <Compile Include="src\Commands\NativeOrderExecutionContext.cs" />
+    <Compile Include="src\Commands\NativeOrderResult.cs" />
+    <Compile Include="src\Commands\NativeOrderPrimitiveExecutor.cs" />
     <Compile Include="src\Adapters\FormationDataAdapter.cs" />
     <Compile Include="src\Adapters\FormationDataResult.cs" />
     <Compile Include="src\Adapters\BackspaceConflictGuard.cs" />

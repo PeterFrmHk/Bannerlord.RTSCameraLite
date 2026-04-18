@@ -185,6 +185,27 @@ namespace Bannerlord.RTSCameraLite.Config
         /// </summary>
         public bool AllowCavalryReformWithoutCommander { get; set; }
 
+        // Slice 14 — native order primitive executor (single adapter boundary; off by default).
+
+        /// <summary>
+        /// Master switch for native <c>OrderController</c> issuance via <c>NativeOrderPrimitiveExecutor</c>. Default false until explicitly enabled.
+        /// </summary>
+        public bool EnableNativeOrderExecution { get; set; }
+
+        public bool AllowNativeAdvanceOrMove { get; set; }
+
+        public bool AllowNativeCharge { get; set; }
+
+        public bool AllowNativeHold { get; set; }
+
+        public bool AllowNativeReform { get; set; }
+
+        public bool AllowNativeFollowCommander { get; set; }
+
+        public bool AllowNativeStop { get; set; }
+
+        public bool EnableNativeOrderDebug { get; set; }
+
         // Slice 15 — command router + formation restriction (validation before native execution).
 
         public bool EnableCommandRouter { get; set; }

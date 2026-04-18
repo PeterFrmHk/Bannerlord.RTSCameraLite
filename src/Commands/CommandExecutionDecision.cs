@@ -1,5 +1,3 @@
-using Bannerlord.RTSCameraLite.Adapters;
-
 namespace Bannerlord.RTSCameraLite.Commands
 {
     /// <summary>Whether and how a validated intent may touch native primitives (Slice 15).</summary>

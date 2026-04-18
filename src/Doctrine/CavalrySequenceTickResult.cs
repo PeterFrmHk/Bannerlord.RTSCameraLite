@@ -1,4 +1,4 @@
-using Bannerlord.RTSCameraLite.Adapters;
+using Bannerlord.RTSCameraLite.Commands;
 
 namespace Bannerlord.RTSCameraLite.Doctrine
 {
@@ -18,7 +18,8 @@ namespace Bannerlord.RTSCameraLite.Doctrine
             Aborted = aborted;
             NewState = newState;
             Message = message ?? string.Empty;
-            NativeOrderResult = nativeOrderResult ?? NativeOrderResult.Failure("CavalrySequenceTickResult", "null native result");
+            NativeOrderResult = nativeOrderResult
+                ?? NativeOrderResult.Failure(NativeOrderPrimitive.None, "CavalrySequenceTickResult: null native result");
         }
 
         public bool Continued { get; }

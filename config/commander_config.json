@@ -87,6 +87,15 @@
   "EnableCavalryDoctrineDebug": true,
   "AllowCavalryReformWithoutCommander": false,
 
+  "EnableNativeOrderExecution": false,
+  "AllowNativeAdvanceOrMove": true,
+  "AllowNativeCharge": true,
+  "AllowNativeHold": true,
+  "AllowNativeReform": true,
+  "AllowNativeFollowCommander": true,
+  "AllowNativeStop": true,
+  "EnableNativeOrderDebug": true,
+
   "EnableCommandRouter": true,
   "EnableCommandValidationDebug": true,
   "AllowBasicChargeWithoutAdvancedDoctrine": true,
