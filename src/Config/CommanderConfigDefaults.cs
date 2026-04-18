@@ -82,6 +82,19 @@ namespace Bannerlord.RTSCameraLite.Config
                 SlotReassignmentCooldownSeconds = 3.0f,
                 RallyScanIntervalSeconds = 3.0f,
                 EnableRallyAbsorptionDebug = true,
+                CavalryLateralSpacing = 4.5f,
+                CavalryDepthSpacing = 6.0f,
+                HorseArcherLateralSpacing = 7.0f,
+                HorseArcherDepthSpacing = 8.0f,
+                CavalryReleaseLockDistance = 12.0f,
+                CavalryReformDistanceFromAttackedFormation = 30.0f,
+                CavalryReformCooldownSeconds = 6.0f,
+                CavalryMinimumEnemyDistanceToReform = 20.0f,
+                CavalryImpactEnemyDistance = 7.5f,
+                CavalryImpactSpeedDropThreshold = 0.35f,
+                CavalryImpactAgentRatio = 0.25f,
+                EnableCavalryDoctrineDebug = true,
+                AllowCavalryReformWithoutCommander = false,
                 EnableCommandRouter = true,
                 EnableCommandValidationDebug = true,
                 AllowBasicChargeWithoutAdvancedDoctrine = true,
@@ -245,6 +258,54 @@ namespace Bannerlord.RTSCameraLite.Config
                    && c.SlotReassignmentCooldownSeconds == 0f
                    && c.RallyScanIntervalSeconds == 0f
                    && !c.EnableRallyAbsorptionDebug;
+        }
+
+        /// <summary>
+        /// Older JSON omits Slice 13 cavalry keys — floats deserialize to 0 and booleans to false.
+        /// </summary>
+        public static void HarmonizeLegacyCavalryDoctrineFields(CommanderConfig config)
+        {
+            if (config == null)
+            {
+                return;
+            }
+
+            if (!LooksLikeUnsetSlice13Cavalry(config))
+            {
+                return;
+            }
+
+            CommanderConfig d = CreateDefault();
+            config.CavalryLateralSpacing = d.CavalryLateralSpacing;
+            config.CavalryDepthSpacing = d.CavalryDepthSpacing;
+            config.HorseArcherLateralSpacing = d.HorseArcherLateralSpacing;
+            config.HorseArcherDepthSpacing = d.HorseArcherDepthSpacing;
+            config.CavalryReleaseLockDistance = d.CavalryReleaseLockDistance;
+            config.CavalryReformDistanceFromAttackedFormation = d.CavalryReformDistanceFromAttackedFormation;
+            config.CavalryReformCooldownSeconds = d.CavalryReformCooldownSeconds;
+            config.CavalryMinimumEnemyDistanceToReform = d.CavalryMinimumEnemyDistanceToReform;
+            config.CavalryImpactEnemyDistance = d.CavalryImpactEnemyDistance;
+            config.CavalryImpactSpeedDropThreshold = d.CavalryImpactSpeedDropThreshold;
+            config.CavalryImpactAgentRatio = d.CavalryImpactAgentRatio;
+            config.EnableCavalryDoctrineDebug = d.EnableCavalryDoctrineDebug;
+            config.AllowCavalryReformWithoutCommander = d.AllowCavalryReformWithoutCommander;
+        }
+
+        private static bool LooksLikeUnsetSlice13Cavalry(CommanderConfig c)
+        {
+            return c.CavalryLateralSpacing == 0f
+                   && c.CavalryDepthSpacing == 0f
+                   && c.HorseArcherLateralSpacing == 0f
+                   && c.HorseArcherDepthSpacing == 0f
+                   && c.CavalryReleaseLockDistance == 0f
+                   && c.CavalryReformDistanceFromAttackedFormation == 0f
+                   && c.CavalryReformCooldownSeconds == 0f
+                   && c.CavalryMinimumEnemyDistanceToReform == 0f
+                   && c.CavalryImpactEnemyDistance == 0f
+                   && c.CavalryImpactSpeedDropThreshold == 0f
+                   && c.CavalryImpactAgentRatio == 0f
+                   && !c.EnableCavalryDoctrineDebug
+                   && !c.AllowCavalryReformWithoutCommander;
         }
 
         /// <summary>

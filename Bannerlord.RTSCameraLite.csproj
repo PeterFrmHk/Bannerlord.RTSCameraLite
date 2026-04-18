@@ -19,7 +19,7 @@
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
   </PropertyGroup>
 
-  <!-- Slice 10 doctrine; Slice 11 eligibility; Slice 12 rally/layout; Slice 15 command router + restrictions. -->
+  <!-- Slice 10 doctrine; Slice 11 eligibility; Slice 12 rally/layout; Slice 13 cavalry doctrine; Slice 15 command router. -->
   <ItemGroup>
     <Compile Remove="src\**\*.cs" />
     <Compile Include="src\SubModule.cs" />
@@ -36,6 +36,7 @@
     <Compile Include="src\Adapters\CameraBridgeResult.cs" />
     <Compile Include="src\Adapters\NativeOrderPrimitive.cs" />
     <Compile Include="src\Adapters\NativeOrderPrimitiveExecutor.cs" />
+    <Compile Include="src\Adapters\NativeOrderExecutionContext.cs" />
     <Compile Include="src\Adapters\NativeOrderResult.cs" />
     <Compile Include="src\Adapters\FormationDataAdapter.cs" />
     <Compile Include="src\Adapters\FormationDataResult.cs" />
@@ -80,6 +81,13 @@
     <Compile Include="src\Doctrine\TroopAbsorptionController.cs" />
     <Compile Include="src\Doctrine\TroopAbsorptionRecord.cs" />
     <Compile Include="src\Doctrine\TroopFormationState.cs" />
+    <Compile Include="src\Doctrine\CavalryChargeState.cs" />
+    <Compile Include="src\Doctrine\CavalryChargeSequenceState.cs" />
+    <Compile Include="src\Doctrine\CavalrySpacingRules.cs" />
+    <Compile Include="src\Doctrine\CavalryPositionLockPolicy.cs" />
+    <Compile Include="src\Doctrine\CavalryImpactDetector.cs" />
+    <Compile Include="src\Doctrine\CavalryReformPolicy.cs" />
+    <Compile Include="src\Doctrine\CavalryDoctrineRules.cs" />
     <Compile Include="src\Doctrine\RestrictionDecision.cs" />
     <Compile Include="src\Doctrine\FormationRestrictionService.cs" />
     <Compile Include="src\Commands\CommandType.cs" />

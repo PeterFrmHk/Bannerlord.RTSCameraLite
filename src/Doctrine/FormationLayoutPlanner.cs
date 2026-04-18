@@ -1,5 +1,6 @@
 using System;
 using Bannerlord.RTSCameraLite.Commander;
+using Bannerlord.RTSCameraLite.Config;
 using Bannerlord.RTSCameraLite.Equipment;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -8,7 +9,7 @@ using TaleWorlds.MountAndBlade;
 namespace Bannerlord.RTSCameraLite.Doctrine
 {
     /// <summary>
-    /// Derives a coarse row/rank spacing plan from doctrine, eligibility, and composition (Slice 12 — planning only).
+    /// Derives a coarse row/rank spacing plan from doctrine, eligibility, and composition (Slice 12+13 — planning only).
     /// </summary>
     public static class FormationLayoutPlanner
     {
@@ -17,8 +18,11 @@ namespace Bannerlord.RTSCameraLite.Doctrine
             FormationDoctrineProfile doctrine,
             FormationEligibilityResult eligibility,
             FormationCompositionProfile composition,
-            CommanderPresenceResult presence)
+            CommanderPresenceResult presence,
+            CommanderConfig commanderConfig = null)
         {
+            CommanderConfig cfg = commanderConfig ?? CommanderConfigDefaults.CreateDefault();
+
             if (formation == null || doctrine == null || eligibility == null || composition == null)
             {
                 return new RowRankSpacingPlan(
@@ -32,7 +36,13 @@ namespace Bannerlord.RTSCameraLite.Doctrine
                     "default",
                     "default",
                     0f,
-                    "invalid inputs");
+                    "invalid inputs",
+                    isMountedLayout: false,
+                    isHorseArcherLayout: false,
+                    positionLockAllowed: false,
+                    releaseLockAfterCloseContact: false,
+                    reformDistance: cfg.CavalryReformDistanceFromAttackedFormation,
+                    mountedDoctrineReason: string.Empty);
             }
 
             try
@@ -43,6 +53,8 @@ namespace Bannerlord.RTSCameraLite.Doctrine
 
                 float mountedShare = composition.CavalryRatio + composition.HorseArcherRatio;
                 bool mountedHeavy = composition.IsMountedHeavy || mountedShare >= 0.45f;
+                bool horseArcherHeavy = CavalrySpacingRules.IsHorseArcherHeavyFormation(composition);
+                bool shockCavalryHeavy = CavalrySpacingRules.IsShockCavalryHeavyFormation(composition, formation);
                 bool rangedHeavy = composition.HorseArcherRatio >= 0.35f || formation.RepresentativeClass == FormationClass.Ranged;
                 float discipline = doctrine.FormationDisciplineScore;
                 bool loose = discipline < 0.35f
@@ -60,11 +72,49 @@ namespace Bannerlord.RTSCameraLite.Doctrine
                 string second = "polearms-shock";
                 string rear = "low-morale-wounded";
 
-                if (rangedHeavy)
+                if (rangedHeavy && !horseArcherHeavy)
                 {
                     front = "skirmisher-edge";
                     second = "ranged-support";
                     rear = "reserve";
+                }
+
+                bool isMountedLayout = false;
+                bool isHorseArcherLayout = false;
+                bool positionLockAllowed = false;
+                bool releaseLockAfterCloseContact = false;
+                string mountedDoctrineReason = string.Empty;
+
+                if (CavalrySpacingRules.IsCavalryHeavyFormation(composition))
+                {
+                    isMountedLayout = true;
+                    isHorseArcherLayout = horseArcherHeavy;
+                    CavalrySpacingRules.ApplyMountedSpacing(
+                        formation,
+                        composition,
+                        doctrine,
+                        cfg,
+                        horseArcherHeavy,
+                        shockCavalryHeavy,
+                        ref lateral,
+                        ref depth,
+                        out mountedDoctrineReason);
+
+                    bool commanderOk = presence != null && presence.HasCommander;
+                    positionLockAllowed = CavalryPositionLockPolicy.ShouldAllowPositionLock(
+                                              CavalryChargeState.RallyingToCommander,
+                                              horseArcherHeavy,
+                                              commanderOk)
+                                          || CavalryPositionLockPolicy.ShouldAllowPositionLock(
+                                              CavalryChargeState.MountedFormationAssembling,
+                                              horseArcherHeavy,
+                                              commanderOk)
+                                          || CavalryPositionLockPolicy.ShouldAllowPositionLock(
+                                              CavalryChargeState.ChargeReady,
+                                              horseArcherHeavy,
+                                              commanderOk);
+
+                    releaseLockAfterCloseContact = shockCavalryHeavy && !horseArcherHeavy;
                 }
 
                 float confidence = discipline * 0.28f
@@ -83,6 +133,11 @@ namespace Bannerlord.RTSCameraLite.Doctrine
                     confidence += 0.12f;
                 }
 
+                if (isHorseArcherLayout)
+                {
+                    confidence *= MBMath.ClampFloat(0.85f + doctrine.MoraleScore * 0.2f, 0.7f, 1f);
+                }
+
                 confidence = MBMath.ClampFloat(confidence, 0f, 1f);
 
                 return new RowRankSpacingPlan(
@@ -96,7 +151,13 @@ namespace Bannerlord.RTSCameraLite.Doctrine
                     second,
                     rear,
                     confidence,
-                    "heuristic layout");
+                    isMountedLayout ? "mounted " + mountedDoctrineReason : "heuristic layout",
+                    isMountedLayout,
+                    isHorseArcherLayout,
+                    positionLockAllowed,
+                    releaseLockAfterCloseContact,
+                    cfg.CavalryReformDistanceFromAttackedFormation,
+                    mountedDoctrineReason);
             }
             catch (Exception ex)
             {
@@ -111,7 +172,13 @@ namespace Bannerlord.RTSCameraLite.Doctrine
                     "fallback",
                     "fallback",
                     0.2f,
-                    ex.Message);
+                    ex.Message,
+                    isMountedLayout: false,
+                    isHorseArcherLayout: false,
+                    positionLockAllowed: false,
+                    releaseLockAfterCloseContact: false,
+                    reformDistance: cfg.CavalryReformDistanceFromAttackedFormation,
+                    mountedDoctrineReason: string.Empty);
             }
         }
     }

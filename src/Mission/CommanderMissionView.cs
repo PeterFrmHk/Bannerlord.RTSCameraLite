@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Bannerlord.RTSCameraLite.Adapters;
 using TaleWorlds.Core;
@@ -51,6 +52,10 @@ namespace Bannerlord.RTSCameraLite.Mission
         private CommanderRallySettings _commanderRallySettings;
         private float _rallyScanAccum;
         private float _absorptionMissionTime;
+        private readonly Dictionary<Formation, CavalryChargeSequenceState> _cavalryDoctrineByFormation =
+            new Dictionary<Formation, CavalryChargeSequenceState>();
+        private readonly Dictionary<Formation, float> _cavalryWideLayoutLogTime = new Dictionary<Formation, float>();
+        private float _cavalryDoctrineAccum;
         private CommandRouter _commandRouter;
         private float _secondsSinceCommandValidationLog;
 
@@ -127,6 +132,7 @@ namespace Bannerlord.RTSCameraLite.Mission
             MaybeScanFriendlyFormationCommanders(dt);
             MaybeScanDoctrineProfiles(dt);
             MaybeScanRallyAbsorption(dt);
+            MaybeEvaluateCavalryDoctrine(dt);
 
             bool toggle = _commanderInput.TryConsumeCommanderModeToggle(Input);
             if (!toggle)
@@ -284,7 +290,8 @@ namespace Bannerlord.RTSCameraLite.Mission
                         doctrineRes.Profile,
                         elig,
                         comp,
-                        presence);
+                        presence,
+                        _commanderConfig);
 
                     CommanderRallyState rallyProbe = _commanderRallyPlanner.BuildRallyState(
                         Mission,
@@ -324,6 +331,147 @@ namespace Bannerlord.RTSCameraLite.Mission
             catch (System.Exception ex)
             {
                 ModLogger.LogDebug($"{ModConstants.ModuleId}: Rally absorption scan skipped ({ex.Message})");
+            }
+        }
+
+        /// <summary>
+        /// Slice 13 — cavalry spacing / lock-release / reform doctrine (planning and logs only; no native orders).
+        /// </summary>
+        private void MaybeEvaluateCavalryDoctrine(float dt)
+        {
+            if (_commanderAssignmentService == null
+                || _doctrineScoreCalculator == null
+                || _formationEligibilityRules == null
+                || _commanderRallyPlanner == null
+                || _commanderRallySettings == null
+                || _anchorResolver == null
+                || Mission?.PlayerTeam == null)
+            {
+                return;
+            }
+
+            float interval = System.Math.Max(0.5f, _commanderConfig.DoctrineScanIntervalSeconds);
+            _cavalryDoctrineAccum += dt;
+            if (_cavalryDoctrineAccum < interval)
+            {
+                return;
+            }
+
+            _cavalryDoctrineAccum = 0f;
+            DoctrineScoreSettings doctrineSettings = DoctrineScoreSettings.FromConfig(_commanderConfig);
+            var toRemove = new List<Formation>();
+
+            try
+            {
+                foreach (Formation formation in Mission.PlayerTeam.FormationsIncludingEmpty)
+                {
+                    if (formation == null || formation.CountOfUnits <= 0)
+                    {
+                        if (formation != null)
+                        {
+                            toRemove.Add(formation);
+                        }
+
+                        continue;
+                    }
+
+                    FormationCompositionProfile comp = FormationCompositionAnalyzer.Analyze(_formationDataAdapter, formation);
+                    if (!CavalrySpacingRules.IsCavalryHeavyFormation(comp))
+                    {
+                        if (_cavalryDoctrineByFormation.ContainsKey(formation))
+                        {
+                            toRemove.Add(formation);
+                        }
+
+                        continue;
+                    }
+
+                    CommanderPresenceResult presence = _commanderAssignmentService.DetectCommander(Mission, formation);
+                    CommanderAnchorState anchor = _anchorResolver.ResolveAnchor(Mission, formation, presence, _anchorSettings);
+                    DoctrineScoreResult doctrineRes = _doctrineScoreCalculator.Compute(
+                        Mission,
+                        formation,
+                        presence,
+                        doctrineSettings);
+                    if (!doctrineRes.ComputationSucceeded || doctrineRes.Profile == null)
+                    {
+                        continue;
+                    }
+
+                    FormationEligibilityResult elig = _formationEligibilityRules.Evaluate(formation, presence, doctrineRes.Profile);
+                    RowRankSpacingPlan plan = FormationLayoutPlanner.Build(
+                        formation,
+                        doctrineRes.Profile,
+                        elig,
+                        comp,
+                        presence,
+                        _commanderConfig);
+
+                    CommanderRallyState rallyFinal = _commanderRallyPlanner.BuildRallyState(
+                        Mission,
+                        formation,
+                        presence,
+                        anchor,
+                        _commanderRallySettings,
+                        _troopAbsorptionController);
+
+                    _cavalryDoctrineByFormation.TryGetValue(formation, out CavalryChargeSequenceState prev);
+                    CavalryChargeSequenceState next = CavalryDoctrineRules.Evaluate(
+                        Mission,
+                        formation,
+                        comp,
+                        doctrineRes.Profile,
+                        presence,
+                        rallyFinal,
+                        _commanderConfig,
+                        _formationDataAdapter,
+                        plan,
+                        prev,
+                        interval);
+
+                    _cavalryDoctrineByFormation[formation] = next;
+
+                    if (!_commanderConfig.EnableCavalryDoctrineDebug)
+                    {
+                        continue;
+                    }
+
+                    string label = formation.RepresentativeClass.ToString();
+                    if (prev == null || next.CurrentState != prev.CurrentState)
+                    {
+                        ModLogger.LogDebug(
+                            $"{ModConstants.ModuleId}: Cavalry doctrine {label}: state={next.CurrentState} ({next.Reason})");
+                    }
+
+                    if (plan.IsMountedLayout
+                        && (!_cavalryWideLayoutLogTime.TryGetValue(formation, out float lastWide)
+                            || _absorptionMissionTime - lastWide >= 10f))
+                    {
+                        _cavalryWideLayoutLogTime[formation] = _absorptionMissionTime;
+                        ModLogger.LogDebug($"{ModConstants.ModuleId}: Cavalry layout: wide spacing. ({label})");
+                    }
+
+                    if (next.PositionLockReleased && (prev == null || !prev.PositionLockReleased))
+                    {
+                        ModLogger.LogDebug($"{ModConstants.ModuleId}: Cavalry close contact: position lock released. ({label})");
+                    }
+
+                    if (next.ReformAllowed && (prev == null || !prev.ReformAllowed))
+                    {
+                        ModLogger.LogDebug($"{ModConstants.ModuleId}: Cavalry reform ready. ({label})");
+                    }
+                }
+
+                for (int i = 0; i < toRemove.Count; i++)
+                {
+                    Formation f = toRemove[i];
+                    _cavalryDoctrineByFormation.Remove(f);
+                    _cavalryWideLayoutLogTime.Remove(f);
+                }
+            }
+            catch (Exception ex)
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: Cavalry doctrine scan skipped ({ex.Message})");
             }
         }
 
@@ -767,6 +915,9 @@ namespace Bannerlord.RTSCameraLite.Mission
             _doctrineScanAccum = 0f;
             _rallyScanAccum = 0f;
             _absorptionMissionTime = 0f;
+            _cavalryDoctrineAccum = 0f;
+            _cavalryDoctrineByFormation.Clear();
+            _cavalryWideLayoutLogTime.Clear();
             _secondsSinceCommandValidationLog = 0f;
             _troopAbsorptionController?.Clear();
             _cameraController.Reset();

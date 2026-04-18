@@ -16,7 +16,13 @@ namespace Bannerlord.RTSCameraLite.Doctrine
             string secondRowRule,
             string rearRankRule,
             float confidence,
-            string reason)
+            string reason,
+            bool isMountedLayout = false,
+            bool isHorseArcherLayout = false,
+            bool positionLockAllowed = false,
+            bool releaseLockAfterCloseContact = false,
+            float reformDistance = 30f,
+            string mountedDoctrineReason = "")
         {
             RowCount = rowCount;
             RankDepth = rankDepth;
@@ -29,6 +35,12 @@ namespace Bannerlord.RTSCameraLite.Doctrine
             RearRankRule = rearRankRule ?? string.Empty;
             Confidence = confidence;
             Reason = reason ?? string.Empty;
+            IsMountedLayout = isMountedLayout;
+            IsHorseArcherLayout = isHorseArcherLayout;
+            PositionLockAllowed = positionLockAllowed;
+            ReleaseLockAfterCloseContact = releaseLockAfterCloseContact;
+            ReformDistance = reformDistance;
+            MountedDoctrineReason = mountedDoctrineReason ?? string.Empty;
         }
 
         public int RowCount { get; }
@@ -52,5 +64,17 @@ namespace Bannerlord.RTSCameraLite.Doctrine
         public float Confidence { get; }
 
         public string Reason { get; }
+
+        public bool IsMountedLayout { get; }
+
+        public bool IsHorseArcherLayout { get; }
+
+        public bool PositionLockAllowed { get; }
+
+        public bool ReleaseLockAfterCloseContact { get; }
+
+        public float ReformDistance { get; }
+
+        public string MountedDoctrineReason { get; }
     }
 }

@@ -105,6 +105,8 @@ namespace Bannerlord.RTSCameraLite.Config
                 CommanderConfigDefaults.HarmonizeLegacyEligibilityFields(parsed);
                 ApplyOmittedSlice12RallyDefaults(json, parsed);
                 CommanderConfigDefaults.HarmonizeLegacyRallyFields(parsed);
+                ApplyOmittedSlice13CavalryDefaults(json, parsed);
+                CommanderConfigDefaults.HarmonizeLegacyCavalryDoctrineFields(parsed);
                 ApplyOmittedSlice15CommandRouterDefaults(json, parsed);
                 CommanderConfigDefaults.HarmonizeLegacyCommandRouterFields(parsed);
 
@@ -321,9 +323,6 @@ namespace Bannerlord.RTSCameraLite.Config
         }
 
         /// <summary>
-        /// Omitted Slice 11 keys deserialize to 0 / false — restore defaults when absent from JSON.
-        /// </summary>
-        /// <summary>
         /// Omitted Slice 12 keys deserialize to 0 / false — restore rally defaults when absent from JSON.
         /// </summary>
         private static void ApplyOmittedSlice12RallyDefaults(string json, CommanderConfig parsed)
@@ -384,6 +383,100 @@ namespace Bannerlord.RTSCameraLite.Config
             }
         }
 
+        /// <summary>
+        /// Omitted Slice 13 keys deserialize to 0 / false — restore cavalry doctrine defaults when absent from JSON.
+        /// </summary>
+        private static void ApplyOmittedSlice13CavalryDefaults(string json, CommanderConfig parsed)
+        {
+            if (parsed == null || string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            try
+            {
+                using JsonDocument doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                JsonElement root = doc.RootElement;
+                CommanderConfig d = CommanderConfigDefaults.CreateDefault();
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CavalryLateralSpacing)))
+                {
+                    parsed.CavalryLateralSpacing = d.CavalryLateralSpacing;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CavalryDepthSpacing)))
+                {
+                    parsed.CavalryDepthSpacing = d.CavalryDepthSpacing;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.HorseArcherLateralSpacing)))
+                {
+                    parsed.HorseArcherLateralSpacing = d.HorseArcherLateralSpacing;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.HorseArcherDepthSpacing)))
+                {
+                    parsed.HorseArcherDepthSpacing = d.HorseArcherDepthSpacing;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CavalryReleaseLockDistance)))
+                {
+                    parsed.CavalryReleaseLockDistance = d.CavalryReleaseLockDistance;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CavalryReformDistanceFromAttackedFormation)))
+                {
+                    parsed.CavalryReformDistanceFromAttackedFormation = d.CavalryReformDistanceFromAttackedFormation;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CavalryReformCooldownSeconds)))
+                {
+                    parsed.CavalryReformCooldownSeconds = d.CavalryReformCooldownSeconds;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CavalryMinimumEnemyDistanceToReform)))
+                {
+                    parsed.CavalryMinimumEnemyDistanceToReform = d.CavalryMinimumEnemyDistanceToReform;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CavalryImpactEnemyDistance)))
+                {
+                    parsed.CavalryImpactEnemyDistance = d.CavalryImpactEnemyDistance;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CavalryImpactSpeedDropThreshold)))
+                {
+                    parsed.CavalryImpactSpeedDropThreshold = d.CavalryImpactSpeedDropThreshold;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.CavalryImpactAgentRatio)))
+                {
+                    parsed.CavalryImpactAgentRatio = d.CavalryImpactAgentRatio;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableCavalryDoctrineDebug)))
+                {
+                    parsed.EnableCavalryDoctrineDebug = d.EnableCavalryDoctrineDebug;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.AllowCavalryReformWithoutCommander)))
+                {
+                    parsed.AllowCavalryReformWithoutCommander = d.AllowCavalryReformWithoutCommander;
+                }
+            }
+            catch
+            {
+                // Ignore merge failures.
+            }
+        }
+
+        /// <summary>
+        /// Omitted Slice 11 keys deserialize to 0 / false — restore eligibility defaults when absent from JSON.
+        /// </summary>
         private static void ApplyOmittedSlice11EligibilityDefaults(string json, CommanderConfig parsed)
         {
             if (parsed == null || string.IsNullOrWhiteSpace(json))

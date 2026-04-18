@@ -33,6 +33,7 @@ Some slices touch fragile engine surfaces. See **`docs/slice-hard-gates.md`** be
 | 10 | [`slice-10-formation-doctrine-profile.md`](slice-10-formation-doctrine-profile.md); manual checklist [`manual-test-checklist-slice-10.md`](../tests/manual-test-checklist-slice-10.md) |
 | 11 | [`slice-11-formation-eligibility-rules.md`](slice-11-formation-eligibility-rules.md); manual checklist [`manual-test-checklist-slice-11.md`](../tests/manual-test-checklist-slice-11.md) |
 | 12 | [`slice-12-commander-rally-absorption-model.md`](slice-12-commander-rally-absorption-model.md) — rally bands + layout planning only; manual checklist [`manual-test-checklist-slice-12.md`](../tests/manual-test-checklist-slice-12.md) |
+| 13 | [`slice-13-cavalry-spacing-charge-release.md`](slice-13-cavalry-spacing-charge-release.md); manual checklist [`manual-test-checklist-slice-13.md`](../tests/manual-test-checklist-slice-13.md) |
 
 ## Slice audit index (repository root)
 

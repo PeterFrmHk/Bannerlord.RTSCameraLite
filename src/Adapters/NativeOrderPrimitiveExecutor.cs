@@ -4,7 +4,7 @@ using TaleWorlds.MountAndBlade;
 namespace Bannerlord.RTSCameraLite.Adapters
 {
     /// <summary>
-    /// Single choke point for native order primitives. Slice 3: returns <see cref="NativeOrderResult.NotWired"/> until
+    /// Single choke point for native order primitives. Slice 3: returns <see cref="NativeOrderResult.CreateNotWired"/> until
     /// Slice 0 research + in-game verification for <c>OrderController</c> / selection restore is complete.
     /// </summary>
     public sealed class NativeOrderPrimitiveExecutor
@@ -14,22 +14,40 @@ namespace Bannerlord.RTSCameraLite.Adapters
 
         public NativeOrderResult ExecuteAdvanceOrMove(Formation formation, Vec3 targetPosition)
         {
+            return ExecuteAdvanceOrMove(formation, targetPosition, NativeOrderExecutionContext.Default);
+        }
+
+        public NativeOrderResult ExecuteAdvanceOrMove(Formation formation, Vec3 targetPosition, NativeOrderExecutionContext context)
+        {
             _ = formation;
             _ = targetPosition;
-            return NativeOrderResult.NotWired(nameof(ExecuteAdvanceOrMove), NotWiredReason);
+            _ = context;
+            return NativeOrderResult.CreateNotWired(nameof(ExecuteAdvanceOrMove), NotWiredReason);
         }
 
         public NativeOrderResult ExecuteCharge(Formation formation)
         {
+            return ExecuteCharge(formation, NativeOrderExecutionContext.Default);
+        }
+
+        public NativeOrderResult ExecuteCharge(Formation formation, NativeOrderExecutionContext context)
+        {
             _ = formation;
-            return NativeOrderResult.NotWired(nameof(ExecuteCharge), NotWiredReason);
+            _ = context;
+            return NativeOrderResult.CreateNotWired(nameof(ExecuteCharge), NotWiredReason);
         }
 
         public NativeOrderResult ExecuteHoldOrReform(Formation formation, Vec3 reformPosition)
         {
+            return ExecuteHoldOrReform(formation, reformPosition, NativeOrderExecutionContext.Default);
+        }
+
+        public NativeOrderResult ExecuteHoldOrReform(Formation formation, Vec3 reformPosition, NativeOrderExecutionContext context)
+        {
             _ = formation;
             _ = reformPosition;
-            return NativeOrderResult.NotWired(nameof(ExecuteHoldOrReform), NotWiredReason);
+            _ = context;
+            return NativeOrderResult.CreateNotWired(nameof(ExecuteHoldOrReform), NotWiredReason);
         }
     }
 }

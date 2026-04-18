@@ -154,6 +154,37 @@ namespace Bannerlord.RTSCameraLite.Config
 
         public bool EnableRallyAbsorptionDebug { get; set; }
 
+        // Slice 13 — cavalry spacing + charge-release doctrine (planning only; no native orders).
+
+        public float CavalryLateralSpacing { get; set; }
+
+        public float CavalryDepthSpacing { get; set; }
+
+        public float HorseArcherLateralSpacing { get; set; }
+
+        public float HorseArcherDepthSpacing { get; set; }
+
+        public float CavalryReleaseLockDistance { get; set; }
+
+        public float CavalryReformDistanceFromAttackedFormation { get; set; }
+
+        public float CavalryReformCooldownSeconds { get; set; }
+
+        public float CavalryMinimumEnemyDistanceToReform { get; set; }
+
+        public float CavalryImpactEnemyDistance { get; set; }
+
+        public float CavalryImpactSpeedDropThreshold { get; set; }
+
+        public float CavalryImpactAgentRatio { get; set; }
+
+        public bool EnableCavalryDoctrineDebug { get; set; }
+
+        /// <summary>
+        /// When true, cavalry reform discipline may proceed without a recognized commander (Slice 13 fallback).
+        /// </summary>
+        public bool AllowCavalryReformWithoutCommander { get; set; }
+
         // Slice 15 — command router + formation restriction (validation before native execution).
 
         public bool EnableCommandRouter { get; set; }
