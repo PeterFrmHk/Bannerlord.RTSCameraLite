@@ -107,6 +107,7 @@ namespace Bannerlord.RTSCameraLite.Config
                 ApplyOmittedSlice7PolicyDefaults(json, parsed);
                 ApplyOmittedSlice25RuntimeHookDefaults(json, parsed);
                 ApplyOmittedHarmonyScaffoldDefaults(json, parsed);
+                ApplyOmittedTWCommandLayerDefaults(json, parsed);
                 CommanderConfigDefaults.HarmonizeLegacyDetectionFields(parsed);
                 ApplyOmittedSlice9AnchorDefaults(json, parsed);
                 ApplyOmittedSlice10DoctrineDefaults(json, parsed);
@@ -267,6 +268,46 @@ namespace Bannerlord.RTSCameraLite.Config
             catch
             {
                 // Ignore merge failures.
+            }
+        }
+
+        /// <summary>
+        /// Omitted TW command layer gates must remain fail-closed.
+        /// </summary>
+        private static void ApplyOmittedTWCommandLayerDefaults(string json, CommanderConfig parsed)
+        {
+            if (parsed == null || string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            try
+            {
+                using JsonDocument doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                JsonElement root = doc.RootElement;
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableFormationSelection)))
+                {
+                    parsed.EnableFormationSelection = false;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableGroundCommandPreview)))
+                {
+                    parsed.EnableGroundCommandPreview = false;
+                }
+
+                if (!JsonHasPropertyIgnoreCase(root, nameof(CommanderConfig.EnableGroundMoveExecution)))
+                {
+                    parsed.EnableGroundMoveExecution = false;
+                }
+            }
+            catch
+            {
+                // Ignore merge failures; bool default remains false.
             }
         }
 

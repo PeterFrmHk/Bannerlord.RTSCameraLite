@@ -44,6 +44,7 @@
     <Compile Include="src\Mission\CommanderMissionView.cs" />
     <Compile Include="src\Mission\CommanderModeState.cs" />
     <Compile Include="src\Input\CommanderInputReader.cs" />
+    <Compile Include="src\Input\CommandGestureParser.cs" />
     <Compile Include="src\Input\CommanderInputOwnershipState.cs" />
     <Compile Include="src\Input\CommanderNativeInputGuard.cs" />
     <Compile Include="src\Input\CommanderInputSnapshot.cs" />
@@ -52,6 +53,7 @@
     <Compile Include="src\Commands\NativeOrderPrimitive.cs" />
     <Compile Include="src\Commands\NativeOrderExecutionContext.cs" />
     <Compile Include="src\Commands\NativeOrderResult.cs" />
+    <Compile Include="src\Commands\GroundMoveExecutionGate.cs" />
     <Compile Include="src\Commands\NativeOrderPrimitiveExecutor.cs" />
     <Compile Include="src\Adapters\FormationDataAdapter.cs" />
     <Compile Include="src\Adapters\FormationDataResult.cs" />
@@ -127,6 +129,8 @@
     <Compile Include="src\Tactical\FormationTargetResult.cs" />
     <Compile Include="src\Tactical\TerrainProjectionService.cs" />
     <Compile Include="src\Tactical\GroundTargetResolver.cs" />
+    <Compile Include="src\Selection\FormationSelectionState.cs" />
+    <Compile Include="src\Selection\FormationSelectionService.cs" />
     <Compile Include="src\UX\FeedbackThrottle.cs" />
     <Compile Include="src\UX\TacticalFeedbackService.cs" />
     <Compile Include="src\UX\CommandMarkerType.cs" />

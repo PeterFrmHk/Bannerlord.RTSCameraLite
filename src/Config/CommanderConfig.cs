@@ -23,6 +23,21 @@ namespace Bannerlord.RTSCameraLite.Config
         /// </summary>
         public bool EnableHarmonyDiagnostics { get; set; }
 
+        /// <summary>
+        /// TW-1 opt-in gate for number-key friendly formation selection feedback. Default false.
+        /// </summary>
+        public bool EnableFormationSelection { get; set; }
+
+        /// <summary>
+        /// TW-2 opt-in gate for preview-only ground move intents. Default false; never executes orders.
+        /// </summary>
+        public bool EnableGroundCommandPreview { get; set; }
+
+        /// <summary>
+        /// TW-3 opt-in gate for native selected-formation move execution from ground preview input. Default false.
+        /// </summary>
+        public bool EnableGroundMoveExecution { get; set; }
+
         public bool StartBattlesInCommanderMode { get; set; }
 
         public string ModeActivationKey { get; set; } = string.Empty;

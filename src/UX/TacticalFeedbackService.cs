@@ -115,6 +115,75 @@ namespace Bannerlord.RTSCameraLite.UX
         }
 
         /// <summary>
+        /// TW-1 number-key formation selection feedback. Event-driven and throttled per slot/message.
+        /// </summary>
+        public void ShowFormationSelectionFeedback(string message, int slot, bool allowUi)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
+            string key = "tw1-select-" + slot + "-" + message;
+            if (!_throttle.TryAllow(key, 0.35, forceImmediate: false))
+            {
+                return;
+            }
+
+            ModLogger.PlayerMessage(message, allowUi: allowUi);
+        }
+
+        public void ShowGroundCommandPreview(CommandIntent intent, string formationLabel, bool allowUi)
+        {
+            if (intent == null || !intent.TargetPosition.HasValue)
+            {
+                return;
+            }
+
+            Vec3 p = intent.TargetPosition.Value;
+            string label = string.IsNullOrWhiteSpace(formationLabel) ? "Formation" : formationLabel;
+            string key = $"tw2-ground-preview-{label}";
+            if (!_throttle.TryAllow(key, 0.35, forceImmediate: false))
+            {
+                return;
+            }
+
+            ModLogger.PlayerMessage(
+                $"Preview move: {label} -> ({p.x:0.#},{p.y:0.#},{p.z:0.#})",
+                allowUi: allowUi);
+        }
+
+        public void ShowGroundCommandPreviewWarning(string message, bool allowUi)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
+            if (!_throttle.TryAllow("tw2-ground-preview-warning-" + message, 0.75, forceImmediate: false))
+            {
+                return;
+            }
+
+            ModLogger.PlayerMessage(message, allowUi: allowUi);
+        }
+
+        public void ShowGroundMoveExecutionResult(string message, bool allowUi)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
+            if (!_throttle.TryAllow("tw3-ground-move-execution-" + message, 0.75, forceImmediate: false))
+            {
+                return;
+            }
+
+            ModLogger.PlayerMessage(message, allowUi: allowUi);
+        }
+
+        /// <summary>
         /// Slice 10: surfaces command validation only (no order execution).
         /// </summary>
         public void ShowCommandValidation(CommandValidationResult result)

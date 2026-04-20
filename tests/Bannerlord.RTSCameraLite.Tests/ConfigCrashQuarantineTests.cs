@@ -14,6 +14,9 @@ namespace Bannerlord.RTSCameraLite.Tests
             Assert.False(d.EnableMissionRuntimeHooks);
             Assert.False(d.EnableHarmonyPatches);
             Assert.False(d.EnableHarmonyDiagnostics);
+            Assert.False(d.EnableFormationSelection);
+            Assert.False(d.EnableGroundCommandPreview);
+            Assert.False(d.EnableGroundMoveExecution);
             Assert.False(d.StartBattlesInCommanderMode);
             Assert.False(d.EnableDiagnostics);
             Assert.False(d.EnableCommandMarkers);

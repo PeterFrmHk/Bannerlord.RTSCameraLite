@@ -150,6 +150,37 @@ namespace Bannerlord.RTSCameraLite.Input
         }
 
         /// <summary>
+        /// TW-1 number-key selection input. Returns slots 1-8 only; no order input is read here.
+        /// </summary>
+        public bool TryConsumeFormationSelectionSlot(IInputContext input, out int slot)
+        {
+            slot = 0;
+            if (input == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                if (input.IsKeyReleased(InputKey.D1) || input.IsKeyReleased(InputKey.Numpad1)) { slot = 1; return true; }
+                if (input.IsKeyReleased(InputKey.D2) || input.IsKeyReleased(InputKey.Numpad2)) { slot = 2; return true; }
+                if (input.IsKeyReleased(InputKey.D3) || input.IsKeyReleased(InputKey.Numpad3)) { slot = 3; return true; }
+                if (input.IsKeyReleased(InputKey.D4) || input.IsKeyReleased(InputKey.Numpad4)) { slot = 4; return true; }
+                if (input.IsKeyReleased(InputKey.D5) || input.IsKeyReleased(InputKey.Numpad5)) { slot = 5; return true; }
+                if (input.IsKeyReleased(InputKey.D6) || input.IsKeyReleased(InputKey.Numpad6)) { slot = 6; return true; }
+                if (input.IsKeyReleased(InputKey.D7) || input.IsKeyReleased(InputKey.Numpad7)) { slot = 7; return true; }
+                if (input.IsKeyReleased(InputKey.D8) || input.IsKeyReleased(InputKey.Numpad8)) { slot = 8; return true; }
+            }
+            catch
+            {
+                slot = 0;
+                return false;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Reads held-state camera movement keys for the current tick. All <see cref="IInputContext"/> polling for
         /// these bindings stays in this class (Slice 4).
         /// </summary>

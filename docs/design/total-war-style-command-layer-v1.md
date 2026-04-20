@@ -1,6 +1,6 @@
 # Total War-style command layer v1
 
-**Status:** design/spec slice only.  
+**Status:** design/spec slice with TW-1, TW-2, and TW-3 code-present updates.  
 **Scope:** Planned in-mission command control layer for RTS Commander Doctrine.  
 **Runtime rule:** No gameplay behavior is added by this document.
 
@@ -24,9 +24,9 @@ Non-goals:
 The command layer should support this user grammar when explicitly enabled:
 
 - **Commander camera mode:** player enters an RTS-style camera posture for reading the field and issuing formation-level commands. This remains gated by mission runtime and camera config.
-- **Formation selection:** player selects one or more friendly formations. Existing `FormationSelectionState` and `FormationQueryService` are confirmed repo facts, but the current state is single-selection oriented and should be expanded only in a bounded TW-1 slice.
-- **Number keys:** number keys map to friendly formation groups in the player team's ordered formation list. Selection must be read-only in TW-1 and must not issue orders.
-- **Click ground move:** a ground click resolves to a world position and produces a `CommandIntent` of type `AdvanceOrMove`. Preview-only comes before native execution.
+- **Formation selection:** player selects one or more friendly formations. TW-1 adds a gated `src/Selection` state/service for friendly selection feedback only; it does not issue orders.
+- **Number keys:** number keys map to friendly formation categories. TW-1 maps `1` Infantry, `2` Ranged, `3` Cavalry, `4` Horse Archers, and reserves `5-8` for later slices.
+- **Click ground move:** a ground click resolves to a world position and produces a `CommandIntent` of type `AdvanceOrMove`. Preview-only comes before native execution. TW-2 uses a temporary `G` key ground-preview gesture from the commander camera ray instead of right-click to avoid native order UI conflicts. TW-3 uses temporary `Shift+G` for gated native move execution.
 - **Right-drag facing/width:** drag start anchors a target position; drag vector sets facing; drag length may preview width or frontage. First implementation should render preview/markers only.
 - **Enemy formation click target:** enemy formation selection resolves a `TargetFormation` and a representative target position. It should produce a charge/attack-style intent only after target resolving is guarded and doctrine validation exists.
 - **Shift queue:** shift-modified commands append to a queue instead of replacing the current pending command list.
@@ -107,7 +107,9 @@ Required/desired gates:
 
 - **`EnableMissionRuntimeHooks`:** existing hard gate. If false, no mission command layer attaches.
 - **`EnableCommanderCamera`:** proposed gate for camera control surfaces. Do not infer from runtime hooks alone.
-- **`EnableFormationSelection`:** proposed gate for selection state and formation list reads.
+- **`EnableFormationSelection`:** implemented TW-1 gate for number-key selection state and formation list reads; default false and also requires `EnableMissionRuntimeHooks`.
+- **`EnableGroundCommandPreview`:** implemented TW-2 gate for preview-only `AdvanceOrMove` intent creation and marker/text feedback; default false and also requires runtime hooks plus formation selection.
+- **`EnableGroundMoveExecution`:** implemented TW-3 gate for native selected-formation move execution; default false and also requires runtime hooks, selection, preview, command router, native primitive execution, and native order execution.
 - **`EnableCommandPreview`:** proposed gate for ground/drag/enemy preview markers without native execution.
 - **`EnableCommandRouter`:** existing gate for command validation/decision.
 - **`EnableNativePrimitiveOrderExecution`:** existing gate for primitive execution through the command router.
@@ -126,9 +128,9 @@ No path should touch `Mission.PlayerTeam.FormationsIncludingEmpty` unless the re
 
 Planned implementation slices:
 
-- **TW-1 Formation selection state, no orders:** extend selection state/service, number-key selection, safe feedback. No command intents, no native execution, no enemy targeting.
-- **TW-2 Ground command intent + marker, no native execution:** parse ground click into `AdvanceOrMove` preview, resolve ground target, show marker/text. CommandRouter may validate only if `EnableCommandRouter` is explicitly enabled; native execution remains off.
-- **TW-3 Native move/hold execution:** route validated ground move/hold through `NativeOrderPrimitiveExecutor` only when native execution gates are true.
+- **TW-1 Formation selection state, no orders:** implemented / code present. Adds opt-in selection state/service, number-key selection, and safe feedback only. No command intents, no native execution, no enemy targeting.
+- **TW-2 Ground command intent + marker, no native execution:** implemented / code present. Temporary `G` key parses a preview request, resolves a ground target from commander camera pose, creates an `AdvanceOrMove` preview intent, and shows marker/text feedback only. CommandRouter/native execution are not invoked.
+- **TW-3 Native move/hold execution:** implemented / experimental. `Shift+G` validates the selected formation ground move and calls only `NativeOrderPrimitiveExecutor.ExecuteAdvanceOrMove` when every execution gate is true. No charge, follow, stop, reform, queue, enemy target, or drag behavior.
 - **TW-4 Drag facing/width preview:** parse right-drag into facing and width preview. No formation shape execution until native-safe API path is proven.
 - **TW-5 Enemy formation targeting:** resolve enemy formation target and create charge/attack-style intents. Execution remains gated and doctrine-filtered.
 - **TW-6 Shift queued orders:** bounded per-formation command queues, visible queue markers, clear queue command. No background/default-live dispatcher.
@@ -159,6 +161,15 @@ Additional TW-2 checks:
 - Ground click preview can fail without crash when terrain/cursor resolution is unavailable.
 - Marker/text feedback is optional and fail-closed.
 - No native order primitive is invoked.
+- TW-2 uses temporary `G` key preview input until right-click/native UI ownership is proven safe.
+- Troops do not move; preview intent is never dispatched.
+
+Additional TW-3 checks:
+
+- Default config cannot move troops.
+- `Shift+G` does not execute unless `EnableGroundMoveExecution`, `EnableCommandRouter`, `EnableNativePrimitiveOrderExecution`, and `EnableNativeOrderExecution` are all true.
+- Only the selected formation is eligible for execution.
+- No charge, cavalry sequence, enemy targeting, queue, or drag-facing behavior occurs.
 
 ## 9. Risk Notes
 
@@ -178,7 +189,10 @@ Confirmed current repo facts:
 - README describes the default install as a load-safe foundation with `CommanderMissionView` dormant unless `EnableMissionRuntimeHooks` is true.
 - `config/commander_config.json` has `EnableMissionRuntimeHooks`, `StartBattlesInCommanderMode`, diagnostics, markers, router, native execution, and Harmony gates defaulted false.
 - `CommanderMissionView` contains commander mode, camera bridge, formation scans, command router debug keys, markers, diagnostics, and runtime fault guards.
-- Existing tactical surfaces include `FormationSelectionState`, `FormationQueryService`, `GroundTargetResolver`, and `FormationTargetResult`.
+- Existing tactical surfaces include legacy tactical selection/query helpers, `GroundTargetResolver`, and `FormationTargetResult`.
+- TW-1 adds `src/Selection/FormationSelectionState.cs` and `src/Selection/FormationSelectionService.cs` for gated formation selection feedback only.
+- TW-2 adds `src/Input/CommandGestureParser.cs` for gated temporary `G` key ground preview requests.
+- TW-3 adds `GroundMoveExecutionGate` and uses existing `NativeOrderPrimitiveExecutor` for `AdvanceOrMove` only behind explicit gates.
 - Existing command surfaces include `CommandIntent`, `CommandRouter`, and `NativeOrderPrimitiveExecutor`.
 - Existing UX surfaces include `CommandMarkerService` and tactical feedback.
 - Existing adapter surfaces include `FormationDataAdapter`, `CameraBridge`, and `HarmonyPatchService`.
@@ -188,13 +202,13 @@ Assumptions:
 - Total War-style control should be formation-level and single-player oriented.
 - Existing `CommandIntent` can be extended rather than replaced.
 - Cursor-to-world and enemy formation picking need additional research before execution.
-- `EnableCommanderCamera`, `EnableFormationSelection`, `EnableCommandPreview`, and `EnableCommandQueue` are proposed gates, not confirmed current config fields.
+- `EnableFormationSelection`, `EnableGroundCommandPreview`, and `EnableGroundMoveExecution` are now current config fields. `EnableCommanderCamera`, `EnableCommandPreview`, and `EnableCommandQueue` remain proposed gates, not confirmed current config fields.
 
 Candidate implementation path:
 
-- Start with TW-1 because selection is observable, low risk, and does not touch native order execution.
-- Keep TW-2 preview-only so ground targeting and marker behavior can be validated before commands can move troops.
-- Add TW-3 execution only after TW-1/TW-2 manual checks pass on the target Bannerlord build.
+- TW-1 is the first code-present slice because selection is observable, low risk, and does not touch native order execution.
+- TW-2 stays preview-only so ground targeting and marker behavior can be validated before commands can move troops.
+- Treat TW-3 as experimental native execution until manual checks pass on the target Bannerlord build.
 
 Forbidden shortcuts:
 

@@ -8,10 +8,17 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <BannerlordRefsVersion>1.2.12.66233</BannerlordRefsVersion>
+    <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
+  </PropertyGroup>
+
   <ItemGroup>
     <!-- Test host needs 0Harmony.dll to load HarmonyPatchService (main mod uses compile-only Lib.Harmony). -->
+    <PackageReference Include="Bannerlord.ReferenceAssemblies" Version="1.2.12.66233" PrivateAssets="all" />
     <PackageReference Include="Lib.Harmony" Version="2.3.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
     <PackageReference Include="xunit" Version="2.6.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.4">
       <PrivateAssets>all</PrivateAssets>
@@ -21,5 +28,46 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Bannerlord.RTSCameraLite.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="TaleWorlds.Library">
+      <HintPath>$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.Library.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.Engine">
+      <HintPath>$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.Engine.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.DotNet">
+      <HintPath>$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.DotNet.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.Core">
+      <HintPath>$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.Core.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.InputSystem">
+      <HintPath>$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.InputSystem.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.MountAndBlade">
+      <HintPath>$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.MountAndBlade.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.MountAndBlade.View">
+      <HintPath>$(NuGetPackageRoot)bannerlord.referenceassemblies.native\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.MountAndBlade.View.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.Library.dll" CopyToOutputDirectory="PreserveNewest" Link="TaleWorlds.Library.dll" />
+    <None Include="$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.Engine.dll" CopyToOutputDirectory="PreserveNewest" Link="TaleWorlds.Engine.dll" />
+    <None Include="$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.DotNet.dll" CopyToOutputDirectory="PreserveNewest" Link="TaleWorlds.DotNet.dll" />
+    <None Include="$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.Core.dll" CopyToOutputDirectory="PreserveNewest" Link="TaleWorlds.Core.dll" />
+    <None Include="$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.InputSystem.dll" CopyToOutputDirectory="PreserveNewest" Link="TaleWorlds.InputSystem.dll" />
+    <None Include="$(NuGetPackageRoot)bannerlord.referenceassemblies.core\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.MountAndBlade.dll" CopyToOutputDirectory="PreserveNewest" Link="TaleWorlds.MountAndBlade.dll" />
+    <None Include="$(NuGetPackageRoot)bannerlord.referenceassemblies.native\$(BannerlordRefsVersion)\ref\net472\TaleWorlds.MountAndBlade.View.dll" CopyToOutputDirectory="PreserveNewest" Link="TaleWorlds.MountAndBlade.View.dll" />
   </ItemGroup>
 </Project>

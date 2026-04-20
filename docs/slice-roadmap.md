@@ -34,8 +34,9 @@ This roadmap aligns **design intent** with **incremental delivery**. Status labe
 | **CQ1** | Crash quarantine - load-safe defaults | **Shipped** | `EnableMissionRuntimeHooks` fail-closed preflight; dormant debug/router/marker/native-order defaults; guarded `SubModule` / `CommanderMissionView`; `CommanderConfigService.TryReadMissionRuntimeHooksEnabledFailClosed()`. |
 | **H1** | Harmony integration scaffold v1 | **Shipped** | `DependedModule Bannerlord.Harmony`; compile-only **Lib.Harmony**; `HarmonyPatchService` + config gates (`EnableHarmonyPatches`, `EnableHarmonyDiagnostics`, both **false** default; requires `EnableMissionRuntimeHooks` for scaffold init); **zero patches**; research `docs/research/harmony-reference-scan.md`. |
 | **TW-D1** | TW command layer design | **Planned (design)** | `docs/design/total-war-style-command-layer-v1.md`; Total War-inspired control grammar mapped onto Bannerlord formation/native-order substrate. No gameplay implemented. |
-| **TW-1** | Formation selection state | **Planned** | Selection state/service, number-key selection, feedback only; no command intents, no native orders, no default-live runtime. |
-| **TW-2** | Ground command intent preview | **Planned** | Ground target resolution + command marker/text preview; validation optional behind gates; no native execution. |
+| **TW-1** | Formation selection state | **Implemented / code present** | `EnableFormationSelection` default false; selection state/service, number-key selection, feedback only. No command intents, no native orders, no default-live runtime. |
+| **TW-2** | Ground command intent preview | **Implemented / code present** | `EnableGroundCommandPreview` default false; temporary `G` key ground preview from commander camera pose; marker/text feedback only. No native execution, no movement, no queue. |
+| **TW-3** | Native move/hold execution | **Implemented / experimental** | `EnableGroundMoveExecution` default false; temporary `Shift+G` executes selected-formation `AdvanceOrMove` only when router and native execution gates are explicitly enabled. No charge, queue, drag, enemy targeting, or Harmony. |
 
 ---
 

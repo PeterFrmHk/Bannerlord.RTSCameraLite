@@ -19,6 +19,8 @@ using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.View.MissionViews;
+using TwFormationSelectionService = Bannerlord.RTSCameraLite.Selection.FormationSelectionService;
+using TwFormationSelectionState = Bannerlord.RTSCameraLite.Selection.FormationSelectionState;
 
 namespace Bannerlord.RTSCameraLite.Mission
 {
@@ -29,6 +31,7 @@ namespace Bannerlord.RTSCameraLite.Mission
     {
         private readonly CommanderModeState _commanderModeState = new CommanderModeState();
         private readonly CommanderInputReader _commanderInput = new CommanderInputReader();
+        private readonly CommandGestureParser _commandGestureParser = new CommandGestureParser();
         private readonly CameraBridge _cameraBridge = new CameraBridge();
         private readonly CommanderCameraController _cameraController = new CommanderCameraController();
         private readonly BackspaceConflictGuard _backspaceConflictGuard = new BackspaceConflictGuard();
@@ -68,6 +71,8 @@ namespace Bannerlord.RTSCameraLite.Mission
         private TacticalFeedbackService _tacticalFeedback;
         private CommandMarkerService _commandMarkerService;
         private GroundTargetResolver _groundTargetResolver;
+        private TwFormationSelectionState _twFormationSelectionState;
+        private TwFormationSelectionService _twFormationSelectionService;
         private CommanderPerformanceBudget _perfBudget;
         private ThrottledUpdateGate _perfGate;
         private PerformanceDiagnosticsService _perfDiagnostics;
@@ -158,6 +163,8 @@ namespace Bannerlord.RTSCameraLite.Mission
                 _tacticalFeedback,
                 () => Mission);
             _groundTargetResolver = new GroundTargetResolver();
+            _twFormationSelectionState = new TwFormationSelectionState();
+            _twFormationSelectionService = new TwFormationSelectionService();
             _missionPerfClock = 0f;
             _markerTickAccumSeconds = 0f;
             LogShellActiveOnce();
@@ -214,6 +221,8 @@ namespace Bannerlord.RTSCameraLite.Mission
                 _perfDiagnostics.Tick(_missionPerfClock, dt);
             }
 
+            MaybeProcessFormationSelectionInput();
+            MaybeProcessGroundCommandPreviewInput();
             MaybeRunDoctrineAndCavalryScans(dt);
             MaybeScanFriendlyFormationCommanders(dt);
             MaybeScanRallyAbsorption(dt);
@@ -1028,6 +1037,356 @@ namespace Bannerlord.RTSCameraLite.Mission
             }
         }
 
+        private void MaybeProcessFormationSelectionInput()
+        {
+            if (_runtimeFaulted || Mission == null || Mission.MissionEnded)
+            {
+                return;
+            }
+
+            if (!_commanderConfig.EnableMissionRuntimeHooks || !_commanderConfig.EnableFormationSelection)
+            {
+                return;
+            }
+
+            IInputContext input = Input;
+            if (input == null)
+            {
+                return;
+            }
+
+            int slot;
+            if (!_commanderInput.TryConsumeFormationSelectionSlot(input, out slot))
+            {
+                return;
+            }
+
+            if (!HasPlayerTeamSafe())
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: TW-1 formation selection skipped (no player team).");
+                return;
+            }
+
+            if (_twFormationSelectionState == null)
+            {
+                _twFormationSelectionState = new TwFormationSelectionState();
+            }
+
+            if (_twFormationSelectionService == null)
+            {
+                _twFormationSelectionService = new TwFormationSelectionService();
+            }
+
+            var result = _twFormationSelectionService.TrySelectNumberKeySlot(
+                Mission,
+                _commanderConfig.EnableMissionRuntimeHooks,
+                _commanderConfig.EnableFormationSelection,
+                slot,
+                _twFormationSelectionState);
+
+            if (result == null || !result.Handled)
+            {
+                return;
+            }
+
+            bool allowUi = _commanderModeState.IsEnabled && _tacticalFeedback != null;
+            if (allowUi)
+            {
+                _tacticalFeedback.ShowFormationSelectionFeedback(result.Message, result.Slot, allowUi: true);
+            }
+            else
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: {result.Message}");
+            }
+        }
+
+        private bool HasPlayerTeamSafe()
+        {
+            try
+            {
+                return Mission?.PlayerTeam != null;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void MaybeProcessGroundCommandPreviewInput()
+        {
+            if (_runtimeFaulted || Mission == null || Mission.MissionEnded)
+            {
+                return;
+            }
+
+            if (!_commanderConfig.EnableMissionRuntimeHooks
+                || !_commanderConfig.EnableFormationSelection
+                || !_commanderConfig.EnableGroundCommandPreview
+                || !_commanderModeState.IsEnabled)
+            {
+                return;
+            }
+
+            IInputContext input = Input;
+            if (input == null)
+            {
+                return;
+            }
+
+            GroundCommandPreviewRequest request = _commandGestureParser.TryReadGroundCommandPreview(
+                input,
+                _commanderConfig.EnableMissionRuntimeHooks,
+                _commanderConfig.EnableFormationSelection,
+                _commanderConfig.EnableGroundCommandPreview,
+                _commanderModeState.IsEnabled);
+
+            if (!request.Requested)
+            {
+                return;
+            }
+
+            if (_twFormationSelectionState == null
+                || !_twFormationSelectionState.TryGetPrimarySelectedFormation(out Formation selectedFormation))
+            {
+                ShowGroundPreviewWarning("No formation selected");
+                return;
+            }
+
+            if (_groundTargetResolver == null || !_cameraController.HasPose)
+            {
+                ShowGroundPreviewWarning("No valid ground target");
+                return;
+            }
+
+            GroundTargetResult ground;
+            try
+            {
+                CommanderCameraPose pose = _cameraController.GetPose();
+                ground = _groundTargetResolver.TryResolveFromCamera(
+                    Mission,
+                    pose.Position,
+                    pose.Yaw,
+                    pose.Pitch);
+            }
+            catch
+            {
+                ShowGroundPreviewWarning("No valid ground target");
+                return;
+            }
+
+            if (!ground.Success)
+            {
+                ShowGroundPreviewWarning("No valid ground target");
+                return;
+            }
+
+            CommandIntent preview = BuildGroundPreviewIntent(selectedFormation, ground.Position);
+            if (preview == null)
+            {
+                ShowGroundPreviewWarning("No formation selected");
+                return;
+            }
+
+            MaybeShowGroundPreview(preview, selectedFormation);
+            if (request.ExecuteRequested)
+            {
+                CommandIntent executeIntent = BuildGroundMoveExecutionIntent(selectedFormation, ground.Position);
+                TryExecuteGroundMove(executeIntent, selectedFormation);
+            }
+        }
+
+        private CommandIntent BuildGroundPreviewIntent(Formation formation, Vec3 target)
+        {
+            if (formation == null)
+            {
+                return null;
+            }
+
+            return new CommandIntent
+            {
+                Type = CommandType.AdvanceOrMove,
+                SourceFormation = formation,
+                TargetPosition = target,
+                RequiresPosition = true,
+                RequiresTargetFormation = false,
+                RequiresCommander = false,
+                Source = "tw-ground-preview"
+            };
+        }
+
+        private CommandIntent BuildGroundMoveExecutionIntent(Formation formation, Vec3 target)
+        {
+            if (formation == null)
+            {
+                return null;
+            }
+
+            return new CommandIntent
+            {
+                Type = CommandType.AdvanceOrMove,
+                SourceFormation = formation,
+                TargetPosition = target,
+                RequiresPosition = true,
+                RequiresTargetFormation = false,
+                RequiresCommander = false,
+                Source = "tw-ground-execute"
+            };
+        }
+
+        private void TryExecuteGroundMove(CommandIntent intent, Formation formation)
+        {
+            string label = SafeFormationLabel(formation);
+            try
+            {
+                if (intent == null || intent.SourceFormation == null || !intent.TargetPosition.HasValue)
+                {
+                    ShowGroundMoveExecutionFeedback($"Move order failed: invalid move intent");
+                    return;
+                }
+
+                if (!CanExecuteGroundMove(out string gateReason))
+                {
+                    ShowGroundMoveExecutionFeedback($"Move order blocked: {gateReason}");
+                    return;
+                }
+
+                if (_commandRouter == null)
+                {
+                    ShowGroundMoveExecutionFeedback("Move order blocked: command router unavailable");
+                    return;
+                }
+
+                CommandContext context = BuildCommandContext(intent.SourceFormation, intent.Source);
+                CommandValidationResult validation = _commandRouter.Validate(intent, context);
+                if (validation == null || !validation.IsValid || validation.IsBlocked)
+                {
+                    string reason = validation == null ? "validation unavailable" : validation.Message;
+                    ShowGroundMoveExecutionFeedback($"Move order blocked: {reason}");
+                    return;
+                }
+
+                var nativeContext = new NativeOrderExecutionContext(
+                    Mission,
+                    intent.SourceFormation,
+                    targetFormation: null,
+                    targetPosition: intent.TargetPosition,
+                    targetDirection: null,
+                    sourceReason: intent.Source,
+                    eligibility: context?.Eligibility,
+                    followTargetAgent: null);
+
+                NativeOrderResult result = _nativeOrderPrimitives.ExecuteAdvanceOrMove(nativeContext);
+                if (result == null)
+                {
+                    ShowGroundMoveExecutionFeedback("Move order failed: native executor returned no result");
+                    return;
+                }
+
+                if (result.Executed)
+                {
+                    ShowGroundMoveExecutionFeedback($"Move order issued: {label}");
+                    return;
+                }
+
+                if (result.Blocked)
+                {
+                    ShowGroundMoveExecutionFeedback($"Move order blocked: {result.Message}");
+                    return;
+                }
+
+                ShowGroundMoveExecutionFeedback($"Move order failed: {result.Message}");
+            }
+            catch (Exception ex)
+            {
+                ShowGroundMoveExecutionFeedback($"Move order failed: {ex.Message}");
+            }
+        }
+
+        private bool CanExecuteGroundMove(out string reason)
+        {
+            return GroundMoveExecutionGate.CanExecute(
+                _commanderConfig,
+                nativeExecutorAvailable: _nativeOrderPrimitives != null,
+                out reason);
+        }
+
+        private void MaybeShowGroundPreview(CommandIntent preview, Formation formation)
+        {
+            if (preview == null || !preview.TargetPosition.HasValue)
+            {
+                return;
+            }
+
+            string label = SafeFormationLabel(formation);
+            try
+            {
+                if (_commanderConfig.EnableCommandMarkers && _commandMarkerService != null)
+                {
+                    _commandMarkerService.AddMarker(
+                        CommandMarkerType.MoveTarget,
+                        preview.TargetPosition.Value,
+                        "Move preview",
+                        "tw-ground-preview");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: TW-2 move preview marker skipped ({ex.Message})");
+            }
+
+            if (_tacticalFeedback != null)
+            {
+                _tacticalFeedback.ShowGroundCommandPreview(preview, label, allowUi: _commanderModeState.IsEnabled);
+            }
+            else
+            {
+                Vec3 p = preview.TargetPosition.Value;
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: Preview move: {label} -> ({p.x:0.#},{p.y:0.#},{p.z:0.#})");
+            }
+        }
+
+        private void ShowGroundPreviewWarning(string message)
+        {
+            if (_tacticalFeedback != null)
+            {
+                _tacticalFeedback.ShowGroundCommandPreviewWarning(message, allowUi: _commanderModeState.IsEnabled);
+            }
+            else
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: {message}");
+            }
+        }
+
+        private void ShowGroundMoveExecutionFeedback(string message)
+        {
+            if (_tacticalFeedback != null)
+            {
+                _tacticalFeedback.ShowGroundMoveExecutionResult(message, allowUi: _commanderModeState.IsEnabled);
+            }
+            else
+            {
+                ModLogger.LogDebug($"{ModConstants.ModuleId}: {message}");
+            }
+        }
+
+        private static string SafeFormationLabel(Formation formation)
+        {
+            if (formation == null)
+            {
+                return "Formation";
+            }
+
+            try
+            {
+                return formation.RepresentativeClass.ToString();
+            }
+            catch
+            {
+                return "Formation";
+            }
+        }
+
         private void MaybeLogFirstInternalPose()
         {
             if (_loggedFirstInternalPose)
@@ -1570,6 +1929,7 @@ namespace Bannerlord.RTSCameraLite.Mission
             _cavalryWideLayoutLogTime.Clear();
             _cavalrySequenceRegistry.Clear();
             _cavalryNativeSeqTransitionLog.Clear();
+            _twFormationSelectionState?.Clear();
             _commandMarkerService?.Cleanup();
             _tacticalFeedback?.ResetSession();
             _secondsSinceCommandValidationLog = 0f;
@@ -1633,6 +1993,7 @@ namespace Bannerlord.RTSCameraLite.Mission
                 _tacticalFeedback?.ResetSession();
                 _commanderDiagnosticsService?.Cleanup();
                 _troopAbsorptionController?.Clear();
+                _twFormationSelectionState?.Clear();
                 _cavalryDoctrineByFormation.Clear();
                 _cavalryWideLayoutLogTime.Clear();
                 _cavalrySequenceRegistry.Clear();
