@@ -4,19 +4,19 @@
 
 This file installs the Pandora-Workflow operating boundary for this repository.
 
-This repo may use Pandora-Workflow guidance for local development, staging records, bounded implementation slices, and review discipline.
+This repo may use Pandora-Workflow guidance for local development, staging records, bounded implementation slices, scan logs, and review discipline.
 
 ## Authority
 
 This file is workflow guidance only.
 
-It does not grant canon authority, runtime authority, autonomous Git authority, local LLM write authority, or downstream feature authority.
+It does not grant canon authority, runtime authority, autonomous Git authority, local LLM write authority, validation authority, commit authority, push authority, or downstream feature authority.
 
 ## Two-lane workflow
 
 ### Lane A: Draft lane
 
-Local/open-source LLMs may produce candidate-only drafts, SEED-style objective logs, implementation-block plans, assumptions, risks, and test ideas.
+Local/open-source LLMs may produce candidate-only drafts, SEED-style objective logs, implementation-block plans, assumptions, risks, scan logs, and test ideas.
 
 Draft-lane output is inert.
 
@@ -50,8 +50,14 @@ Local LLMs, including Qwen-style drafting assistants, may not:
 - claim repository state
 - decide promotion
 
+## Scan log boundary
+
+Terminal and LLM scan logs are observational only.
+
+They may inform workflow decisions, but they do not grant file-write authority, validation authority, commit authority, push authority, runtime authority, or promotion authority.
+
 ## Current adoption status
 
 This is a docs-only workflow adoption scaffold.
 
-No gameplay code, project files, build settings, or runtime behavior are changed by this file.
+No gameplay code, project files, build settings, assets, or runtime behavior are changed by this file.
